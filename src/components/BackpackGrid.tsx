@@ -1,6 +1,8 @@
 import React from "react";
 import { DroppableCell } from "./DroppableCell";
 import { PlacedItem, ItemData } from '../types';
+import { DraggableGridItem } from "./DraggableGridItem";
+import { CELL_SIZE, GAP_SIZE, GRID_PADDING } from "../constants";
 
 interface BackpackGridProps {
     rows: number;
@@ -16,10 +18,17 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols, placedIte
     return (
         <div
         className="relative grid gap-1 bg-slate-800 p-2 rounded-lg border-2 border-slate-600"
-        // CSSでGridのサイズに合わせて自動生成
+        // CSS Gridではなく、絶対配置のコンテナとして固定する
         style={{
-            gridTemplateColumns: `repeat(${cols}, 40px)`,
-            gridTemplateRows: `repeat(${rows}, 40px)`
+            // パディングを含めた全体のサイズを計算
+            width: cols * CELL_SIZE + (cols - 1) * GAP_SIZE + GRID_PADDING * 2,
+            height: rows * CELL_SIZE + (rows - 1) * GAP_SIZE + GRID_PADDING * 2,
+            padding: GRID_PADDING,
+            // グリッドレイアウトも維持（DroppableCellの配置用）
+            display: 'grid',
+            gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)`,
+            gridTemplateRows: `repeat(${rows}, ${CELL_SIZE}px)`,
+            gap: `${GAP_SIZE}px`,
         }}
         >
             {/* マス目の描画 */}
@@ -29,26 +38,16 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols, placedIte
                 return <DroppableCell key={`${x}-${y}`} x={x} y={y}/>;
             })}
 
-            {/* 配置済みアイテムの描画(Layer分けをすることでアイテムを上に表示) */}
+            {/* 配置済みアイテムの描画 */}
             {placedItems.map((placed) => {
                 const itemData = itemsData.find(d => d.id === placed.itemId);
                 if (!itemData) return null;
                 return (
-                    <div
-                    key={placed.id} // Reactのレンダリング最適化に必須らしい...
-                    className="absolute bg-opacity-80 border-2 border-white rounded pointer-events-none flex items-center justify-center"
-                    style={{
-                        // グリッド座標をピクセルに変換(実際には1マス40px + gap 4pxの計算が必要なので注意)
-                        left: `calc(0.5rem + ${placed.position.x * 44}px)`,
-                        top: `calc(0.5rem + ${placed.position.y * 44}px)`,
-                        width: `${itemData.shape[0].length * 40 + (itemData.shape[0].length - 1)*4}px`,
-                        height: `${itemData.shape.length*40 + (itemData.shape.length - 1)*4}px`,
-                        backgroundColor: itemData.color,
-                    }}
-                    >
-                        {/* 配置後はシンプルに名前だけを表示する */}
-                        <span className="text-xs font-bold text-black">{itemData.name}</span>
-                    </div>
+                    <DraggableGridItem
+                        key={placed.id}
+                        placedItem={placed}
+                        itemData={itemData}
+                    />
                 );
             })}
         </div>

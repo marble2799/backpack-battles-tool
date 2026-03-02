@@ -15,24 +15,53 @@ export default function Home() {
     const handleDragEnd = (event: DragEndEvent) => {
         // active: 今掴んでいるもの, over: マウスカーソルの下にある要素
         const { active, over } = event;
-        // ドロップ先に何もなければ何もしない
-        if (!over) return;
+
+        // どのアイテムを掴んだ？
+        const activeData = active.data.current; // {type: 'shop' | 'grid',...}
+        console.log(activeData);
+        if (!activeData) return;
+
+        // ドロップ先に何もない場合
+        if (!over) {
+            console.log("there is nothing under cursor");
+            // グリッド上のアイテムを外にドロップした場合は削除する
+            if (activeData.type === 'grid') {
+                setPlacedItems((prev) => prev.filter(p => p.id !== activeData.id));
+            }
+            return;
+        }
 
         // active.data.currentとover.data.currentに仕込んだデータを取り出す
-        const item = active.data.current?.item;
         const x = over.data.current?.x;
         const y = over.data.current?.y;
 
-        if (item && x !== undefined && y !== undefined) {
-            // 新しいアイテムを作成して配置
-            const newItem: PlacedItem = {
-                id: crypto.randomUUID(), // ユニークなidを作成
-                itemId: item.id,
-                position: { x, y },
-                rotation: 0,
-            };
+        if (x !== undefined && y !== undefined) {
+            // ショップから新規で配置する場合
+            if (activeData.type === 'shop') {
+                const item = activeData.item;
+                // 新しいアイテムを作成して配置
+                const newItem: PlacedItem = {
+                    id: crypto.randomUUID(), // ユニークなidを作成
+                    itemId: item.id,
+                    position: { x, y },
+                    rotation: 0,
+                };
+                setPlacedItems((prev) => [...prev, newItem]);
+            }
 
-            setPlacedItems((prev) => [...prev, newItem]);
+            // グリッド内で移動させる場合
+            if (activeData.type === 'grid') {
+                const instanceId = activeData.id;
+
+                setPlacedItems((prev) => prev.map((p) => {
+                    if (p.id === instanceId) { // 座標を更新する
+                        return {...p, position: { x, y }};
+                    }
+
+                    // なぜか持っているitemとidが違った場合
+                    return p;
+                }))
+            }
         }
     };
 
