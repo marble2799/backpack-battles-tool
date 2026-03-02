@@ -1,34 +1,54 @@
 import React from "react";
+import { DroppableCell } from "./DroppableCell";
+import { PlacedItem, ItemData } from '../types';
+import { DraggableGridItem } from "./DraggableGridItem";
+import { CELL_SIZE, GAP_SIZE, GRID_PADDING } from "../constants";
 
 interface BackpackGridProps {
     rows: number;
     cols: number;
+    placedItems: PlacedItem[]; // 配置済みのアイテムの一覧
+    itemsData: ItemData[]; // アイコン表示用のマスターデータ
 }
 
-export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols}) => {
+export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols, placedItems, itemsData}) => {
     // 配列を生成してマス目の数だけループする
     const cells = Array.from({length: rows*cols});
 
     return (
         <div
-        className="grid gap-1 bg-slate-800 p-2 rounded-lg border-2 border-slate-600"
-        // CSSでGridのサイズに合わせて自動生成
+        className="relative grid gap-1 bg-slate-800 p-2 rounded-lg border-2 border-slate-600"
+        // CSS Gridではなく、絶対配置のコンテナとして固定する
         style={{
-            gridTemplateColumns: `repeat(${cols}, 40px)`,
-            gridTemplateRows: `repeat(${rows}, 40px)`
+            // パディングを含めた全体のサイズを計算
+            width: cols * CELL_SIZE + (cols - 1) * GAP_SIZE + GRID_PADDING * 2,
+            height: rows * CELL_SIZE + (rows - 1) * GAP_SIZE + GRID_PADDING * 2,
+            padding: GRID_PADDING,
+            // グリッドレイアウトも維持（DroppableCellの配置用）
+            display: 'grid',
+            gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)`,
+            gridTemplateRows: `repeat(${rows}, ${CELL_SIZE}px)`,
+            gap: `${GAP_SIZE}px`,
         }}
         >
+            {/* マス目の描画 */}
             {cells.map((_, index) => {
                 const x = index % cols;
                 const y = Math.floor(index/cols);
+                return <DroppableCell key={`${x}-${y}`} x={x} y={y}/>;
+            })}
 
+            {/* 配置済みアイテムの描画 */}
+            {placedItems.map((placed) => {
+                const itemData = itemsData.find(d => d.id === placed.itemId);
+                if (!itemData) return null;
                 return (
-                    <div
-                    key={`${x}-${y}`} // Reactのレンダリング最適化に必須らしい...
-                    className="w-10 h-10 bg-slate-700 border border-slate-600 rounded-sm hover:bg-slate-600 transition-colors"
-                    title={`(${x}, ${y})`} // マウスホバーで座標表示
+                    <DraggableGridItem
+                        key={placed.id}
+                        placedItem={placed}
+                        itemData={itemData}
                     />
-                )
+                );
             })}
         </div>
     );
