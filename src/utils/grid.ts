@@ -1,4 +1,4 @@
-import {ItemData, PlacedItem, Point} from '../types';
+import { ItemData, PlacedItem, Point } from '../types';
 
 // アイテムが置かれる座標(x, y)を計算する
 export function getOccupiedCells(
@@ -8,13 +8,13 @@ export function getOccupiedCells(
     startY: number,
     rotation: number,
 ): Point[] {
-    const cells:Point[] = [];
+    const cells: Point[] = [];
     // アイテムの縦,横の長さ
     const rows = baseShape.length;
     const cols = baseShape[0].length;
 
-    for (let r=0; r<rows; r++) {
-        for (let c=0; c<cols; c++) {
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
             if (baseShape[r][c] === 1) {
                 let rotX = c;
                 let rotY = r;
@@ -23,10 +23,10 @@ export function getOccupiedCells(
                 if (rotation === 90) {
                     rotX = rows - 1 - r;
                     rotY = c;
-                }else if (rotation === 180) {
+                } else if (rotation === 180) {
                     rotX = cols - 1 - c;
                     rotY = rows - 1 - r;
-                }else if (rotation === 270) {
+                } else if (rotation === 270) {
                     rotX = r;
                     rotY = cols - 1 - c;
                 }
@@ -123,4 +123,97 @@ export function canPlaceItem(
 
     // すべてが通ったらOK
     return true;
+}
+
+// バッグアイテムが占有するセルの集合を返す
+export function getBagCells(
+    placedItems: PlacedItem[],
+    itemsData: ItemData[]
+): Set<string> {
+    const bagCells = new Set<string>();
+    for (const placed of placedItems) {
+        const itemData = itemsData.find(d => d.id === placed.itemId);
+        if (!itemData || !itemData.tags.includes('bag')) continue;
+        const cells = getOccupiedCells(itemData.shape, placed.position.x, placed.position.y, placed.rotation);
+        for (const cell of cells) {
+            bagCells.add(`${cell.x},${cell.y}`);
+        }
+    }
+    return bagCells;
+}
+
+// 非バッグアイテムがバッグセル上に配置されているか確認する
+export function isOnBagCells(cells: Point[], bagCells: Set<string>): boolean {
+    return cells.every(cell => bagCells.has(`${cell.x},${cell.y}`));
+}
+
+// 点灯している星のIDセットを計算する
+// 返り値: "placedItemId-starIndex" 形式の文字列セット
+export function computeLitStars(
+    placedItems: PlacedItem[],
+    itemsData: ItemData[]
+): Set<string> {
+    const litStars = new Set<string>();
+
+    // 占有マップ: "x,y" -> { placed, itemData }
+    const occupationMap = new Map<string, { placed: PlacedItem; itemData: ItemData }>();
+    for (const placed of placedItems) {
+        const itemData = itemsData.find(d => d.id === placed.itemId);
+        if (!itemData) continue;
+        const cells = getOccupiedCells(itemData.shape, placed.position.x, placed.position.y, placed.rotation);
+        for (const cell of cells) {
+            occupationMap.set(`${cell.x},${cell.y}`, { placed, itemData });
+        }
+    }
+
+    for (const placed of placedItems) {
+        const itemData = itemsData.find(d => d.id === placed.itemId);
+        if (!itemData || !itemData.stars) continue;
+
+        const rows = itemData.shape.length;
+        const cols = itemData.shape[0].length;
+
+        itemData.stars.forEach((star, starIndex) => {
+            // 星の相対座標を rotation に合わせて変換 (getOccupiedCells と同じ演算)
+            const r = star.relativePos.y;
+            const c = star.relativePos.x;
+            let rotX = c;
+            let rotY = r;
+
+            if (placed.rotation === 90) {
+                rotX = rows - 1 - r;
+                rotY = c;
+            } else if (placed.rotation === 180) {
+                rotX = cols - 1 - c;
+                rotY = rows - 1 - r;
+            } else if (placed.rotation === 270) {
+                rotX = r;
+                rotY = cols - 1 - c;
+            }
+
+            const absX = placed.position.x + rotX;
+            const absY = placed.position.y + rotY;
+
+            // 4方向の隣接セルを確認
+            const adjacentCells = [
+                { x: absX + 1, y: absY },
+                { x: absX - 1, y: absY },
+                { x: absX, y: absY + 1 },
+                { x: absX, y: absY - 1 },
+            ];
+
+            if (star.condition.type === 'adjacent_tag') {
+                for (const adjCell of adjacentCells) {
+                    const entry = occupationMap.get(`${adjCell.x},${adjCell.y}`);
+                    // 自分自身のセルは除外
+                    if (entry && entry.placed.id !== placed.id && entry.itemData.tags.includes(star.condition.tag)) {
+                        litStars.add(`${placed.id}-${starIndex}`);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    return litStars;
 }
