@@ -6,10 +6,24 @@ import { BackpackGrid } from "../components/BackpackGrid";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { DraggableShopItem } from "../components/DraggableShopItem";
 import { PlacedItem, ItemData } from '../types';
+import { getOccupiedCells, isOutOfBounds, getOverlappingItems, canPlaceItem } from "../utils/grid";
+import { GRID_COLS, GRID_ROWS } from "../constants";
 
 export default function Home() {
     // 配置されたアイテムの状態を保存
     const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
+    
+    // アイテムを90度回転させる
+    const handleRotate = (instanceId: string) => {
+        setPlacedItems((prev) => prev.map((item) => {
+            if (item.id === instanceId) {
+                // 90度足して、360度になったら0に戻す
+                const newRotation = (item.rotation + 90) % 360 as 0 | 90 | 180 | 270;
+                return {...item, rotation: newRotation};
+            }
+            return item;
+        }));
+    }
     
     // ドラッグ終了時の処理を行う
     const handleDragEnd = (event: DragEndEvent) => {
@@ -23,7 +37,6 @@ export default function Home() {
 
         // ドロップ先に何もない場合
         if (!over) {
-            console.log("there is nothing under cursor");
             // グリッド上のアイテムを外にドロップした場合は削除する
             if (activeData.type === 'grid') {
                 setPlacedItems((prev) => prev.filter(p => p.id !== activeData.id));
@@ -34,36 +47,52 @@ export default function Home() {
         // active.data.currentとover.data.currentに仕込んだデータを取り出す
         const x = over.data.current?.x;
         const y = over.data.current?.y;
+        if (x === undefined || y === undefined) return;
 
-        if (x !== undefined && y !== undefined) {
-            // ショップから新規で配置する場合
+        // 配置しようとしているアイテムの情報を取得
+        const item = activeData.type === 'shop' ? activeData.item : ITEMS.find(d => d.id === activeData.item.id);
+        if (!item) return;
+
+        // グリッド状のアイテムなら現在の回転角度を、ショップなら0度を取得
+        let currentRotation: 0 | 90 | 180 | 270 = 0;
+        if (activeData.type === 'grid') {
+            const existingItem = placedItems.find(p => p.id === activeData.id);
+            if (existingItem) currentRotation = existingItem.rotation;
+        }
+
+        const newCells = getOccupiedCells(item.shape, x, y, currentRotation);
+
+        // 境界判定
+        if (isOutOfBounds(newCells, GRID_COLS, GRID_ROWS)) {
+            if (activeData.type === 'grid') { // gridからはみ出たら削除
+                setPlacedItems((prev) => prev.filter(p => p.id !== activeData.id));
+            }
+            return;
+        }
+
+        // 衝突判定(重なったアイテムのIDを取得)
+        const ignoreId = activeData.type === 'grid' ? activeData.id : undefined;
+        const overlappingIds = getOverlappingItems(newCells, placedItems, ITEMS, ignoreId);
+
+        // 実際に状態の更新
+        setPlacedItems((prev) => {
+            // 重なっているアイテムを除外
+            const filtered = prev.filter(p => !overlappingIds.includes(p.id));
+
             if (activeData.type === 'shop') {
-                const item = activeData.item;
-                // 新しいアイテムを作成して配置
+                // ショップからの追加
                 const newItem: PlacedItem = {
-                    id: crypto.randomUUID(), // ユニークなidを作成
+                    id: `${item.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     itemId: item.id,
-                    position: { x, y },
+                    position: {x, y},
                     rotation: 0,
                 };
-                setPlacedItems((prev) => [...prev, newItem]);
+                return [...filtered, newItem];
+            }else { // grid上の場合
+                return filtered.map(p => p.id === activeData.id ? {...p, position: {x, y}}:p);
             }
-
-            // グリッド内で移動させる場合
-            if (activeData.type === 'grid') {
-                const instanceId = activeData.id;
-
-                setPlacedItems((prev) => prev.map((p) => {
-                    if (p.id === instanceId) { // 座標を更新する
-                        return {...p, position: { x, y }};
-                    }
-
-                    // なぜか持っているitemとidが違った場合
-                    return p;
-                }))
-            }
-        }
-    };
+        });
+    }
 
 
     return (
@@ -76,7 +105,7 @@ export default function Home() {
                         <div className="flex flex-col items-center gap-4">
                             <h2 className="text-xl font-semibold">BackPack Area</h2>
                             {/* 現在の状態(=placedItems)を渡す */}
-                            <BackpackGrid rows={7} cols={9} placedItems={placedItems} itemsData={ITEMS}/>
+                            <BackpackGrid rows={GRID_ROWS} cols={GRID_COLS} placedItems={placedItems} itemsData={ITEMS} onRotate={handleRotate}/>
                         </div>
 
                         {/*右側にはアイテムリストを表示*/}

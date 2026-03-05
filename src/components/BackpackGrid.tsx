@@ -9,9 +9,12 @@ interface BackpackGridProps {
     cols: number;
     placedItems: PlacedItem[]; // 配置済みのアイテムの一覧
     itemsData: ItemData[]; // アイコン表示用のマスターデータ
+
+    // Method
+    onRotate(instanceId: string): void;
 }
 
-export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols, placedItems, itemsData}) => {
+export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols, placedItems, itemsData, onRotate}) => {
     // 配列を生成してマス目の数だけループする
     const cells = Array.from({length: rows*cols});
 
@@ -47,6 +50,7 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({rows, cols, placedIte
                         key={placed.id}
                         placedItem={placed}
                         itemData={itemData}
+                        onRotate={onRotate}
                     />
                 );
             })}
