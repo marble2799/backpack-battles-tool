@@ -47,7 +47,7 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
     // 右クリック: ドラッグ中でないときだけ回転を許可
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
-        if (!isDragging) {
+        if (isDragging) {
             onRotate(placedItem.id);
         }
     };
