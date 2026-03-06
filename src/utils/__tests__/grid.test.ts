@@ -132,6 +132,12 @@ describe('getOverlappingItems', () => {
         position: { x: 0, y: 0 },
         rotation: 0,
     };
+    const placedBag: PlacedItem = {
+        id: 'bag-1',
+        itemId: 'bag',
+        position: { x: 0, y: 0 },
+        rotation: 0,
+    };
 
     it('重なりがない場合は空配列を返す', () => {
         const newCells = [{ x: 5, y: 5 }];
@@ -150,6 +156,17 @@ describe('getOverlappingItems', () => {
         const newCells = [{ x: 0, y: 0 }];
         const result = getOverlappingItems(newCells, [placed], ALL_ITEMS, 'shield-1');
         expect(result).toEqual([]);
+    });
+
+    it('異なるレイヤー(バッグ)を除外すれば非バッグアイテムはバッグを上書きしない', () => {
+        // バッグのみを対象から外して衝突判定する（同レイヤーのみ対象）
+        const newCells = [{ x: 0, y: 0 }]; // バッグと同じセル
+        const nonBagItems = [placedBag].filter(p => {
+            const d = ALL_ITEMS.find(i => i.id === p.itemId);
+            return !d?.tags.includes('bag'); // 非バッグのみ
+        });
+        const result = getOverlappingItems(newCells, nonBagItems, ALL_ITEMS);
+        expect(result).toEqual([]); // バッグは衝突しない
     });
 });
 

@@ -123,8 +123,14 @@ export default function Home() {
         }
 
         // 衝突判定(重なったアイテムのIDを取得)
+        // バッグは「床レイヤー」、通常アイテムは「アイテムレイヤー」として
+        // 同じレイヤー内のアイテムのみを対象にする
         const ignoreId = activeData.type === 'grid' ? activeData.id : undefined;
-        const overlappingIds = getOverlappingItems(newCells, placedItems, ITEMS, ignoreId);
+        const sameLayerItems = placedItems.filter(p => {
+            const d = ITEMS.find(i => i.id === p.itemId);
+            return isBagItem ? d?.tags.includes('bag') : !d?.tags.includes('bag');
+        });
+        const overlappingIds = getOverlappingItems(newCells, sameLayerItems, ITEMS, ignoreId);
 
         // 実際に状態の更新
         setPlacedItems((prev) => {
