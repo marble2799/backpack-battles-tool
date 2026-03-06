@@ -54,10 +54,26 @@ export const ITEMS: ItemData[] = [
         color: "#6b7280",
         tags: ["weapon", "sword"],
         stars: [
-            // 上マスに隣接する武器があると点灯
-            { relativePos: { x: 0, y: 0 }, condition: { type: "adjacent_tag", tag: "weapon" } },
-            // 下マスに隣接する武器があると点灯
-            { relativePos: { x: 0, y: 2 }, condition: { type: "adjacent_tag", tag: "weapon" } },
+            // 上端セルの星: 縦向き(0°/180°)では上、横向き(90°/270°)では左端
+            {
+                relativePos: { x: 0, y: 0 },
+                relativePosOverrides: {
+                    90:  { x: 0, y: 0 },
+                    180: { x: 0, y: 2 },
+                    270: { x: 2, y: 0 },
+                },
+                condition: { type: "adjacent_tag", tag: "weapon" },
+            },
+            // 下端セルの星: 縦向き(0°/180°)では下、横向き(90°/270°)では右端
+            {
+                relativePos: { x: 0, y: 2 },
+                relativePosOverrides: {
+                    90:  { x: 2, y: 0 },
+                    180: { x: 0, y: 0 },
+                    270: { x: 0, y: 0 },
+                },
+                condition: { type: "adjacent_tag", tag: "weapon" },
+            },
         ],
     },
     // ===== 防具系 =====

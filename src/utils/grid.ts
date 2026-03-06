@@ -1,4 +1,51 @@
-import { ItemData, PlacedItem, Point } from '../types';
+import { ItemData, PlacedItem, Point, StarDefinition } from '../types';
+
+// 回転と relativePosOverrides を考慮して、星の絶対グリッド座標を返す
+export function getStarAbsolutePos(
+    star: StarDefinition,
+    shape: number[][],
+    startX: number,
+    startY: number,
+    rotation: 0 | 90 | 180 | 270,
+): Point {
+    // オーバーライドが定義されていればそれを使う（視覚座標 → 絶対座標は単純加算）
+    if (rotation !== 0 && star.relativePosOverrides?.[rotation] !== undefined) {
+        const ov = star.relativePosOverrides[rotation]!;
+        return { x: startX + ov.x, y: startY + ov.y };
+    }
+    // フォールバック: relativePos を数学的に回転変換して絶対座標を求める
+    const rows = shape.length;
+    const cols = shape[0].length;
+    const r = star.relativePos.y;
+    const c = star.relativePos.x;
+    let rotX = c;
+    let rotY = r;
+    if (rotation === 90) { rotX = rows - 1 - r; rotY = c; }
+    else if (rotation === 180) { rotX = cols - 1 - c; rotY = rows - 1 - r; }
+    else if (rotation === 270) { rotX = r; rotY = cols - 1 - c; }
+    return { x: startX + rotX, y: startY + rotY };
+}
+
+// 星の描画位置（アイテム左上を原点とした視覚セル座標）を返す
+export function getStarVisualPos(
+    star: StarDefinition,
+    shape: number[][],
+    rotation: 0 | 90 | 180 | 270,
+): Point {
+    if (rotation !== 0 && star.relativePosOverrides?.[rotation] !== undefined) {
+        return star.relativePosOverrides[rotation]!;
+    }
+    const rows = shape.length;
+    const cols = shape[0].length;
+    const r = star.relativePos.y;
+    const c = star.relativePos.x;
+    let vx = c;
+    let vy = r;
+    if (rotation === 90) { vx = rows - 1 - r; vy = c; }
+    else if (rotation === 180) { vx = cols - 1 - c; vy = rows - 1 - r; }
+    else if (rotation === 270) { vx = r; vy = cols - 1 - c; }
+    return { x: vx, y: vy };
+}
 
 // アイテムが置かれる座標(x, y)を計算する
 export function getOccupiedCells(
@@ -170,29 +217,15 @@ export function computeLitStars(
         const itemData = itemsData.find(d => d.id === placed.itemId);
         if (!itemData || !itemData.stars) continue;
 
-        const rows = itemData.shape.length;
-        const cols = itemData.shape[0].length;
-
         itemData.stars.forEach((star, starIndex) => {
-            // 星の相対座標を rotation に合わせて変換 (getOccupiedCells と同じ演算)
-            const r = star.relativePos.y;
-            const c = star.relativePos.x;
-            let rotX = c;
-            let rotY = r;
-
-            if (placed.rotation === 90) {
-                rotX = rows - 1 - r;
-                rotY = c;
-            } else if (placed.rotation === 180) {
-                rotX = cols - 1 - c;
-                rotY = rows - 1 - r;
-            } else if (placed.rotation === 270) {
-                rotX = r;
-                rotY = cols - 1 - c;
-            }
-
-            const absX = placed.position.x + rotX;
-            const absY = placed.position.y + rotY;
+            // オーバーライド対応のヘルパーで絶対座標を取得
+            const absPos = getStarAbsolutePos(
+                star, itemData.shape,
+                placed.position.x, placed.position.y,
+                placed.rotation,
+            );
+            const absX = absPos.x;
+            const absY = absPos.y;
 
             // 4方向の隣接セルを確認
             const adjacentCells = [

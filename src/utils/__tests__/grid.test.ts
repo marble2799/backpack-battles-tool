@@ -6,8 +6,10 @@ import {
     getBagCells,
     isOnBagCells,
     computeLitStars,
+    getStarAbsolutePos,
+    getStarVisualPos,
 } from '../grid';
-import { ItemData, PlacedItem } from '../../types';
+import { ItemData, PlacedItem, StarDefinition } from '../../types';
 
 // ===== テスト用データ =====
 
@@ -300,5 +302,88 @@ describe('computeLitStars', () => {
         };
         const lit = computeLitStars([sword1, sword2], ALL_ITEMS);
         expect(lit.has('sword-1-0')).toBe(false);
+    });
+});
+
+// ===== getStarAbsolutePos / getStarVisualPos テスト =====
+
+describe('getStarAbsolutePos', () => {
+    const shape3x1 = [[1], [1], [1]]; // 縦3×横1
+
+    const starNoOverride: StarDefinition = {
+        relativePos: { x: 0, y: 1 }, // 中央セル
+        condition: { type: 'adjacent_tag', tag: 'armor' },
+    };
+    const starWithOverride: StarDefinition = {
+        relativePos: { x: 0, y: 0 }, // rotation=0 では上端
+        relativePosOverrides: {
+            90:  { x: 2, y: 0 }, // rotation=90 では右端
+            180: { x: 0, y: 2 }, // rotation=180 では下端
+            270: { x: 0, y: 0 }, // rotation=270 では左端
+        },
+        condition: { type: 'adjacent_tag', tag: 'weapon' },
+    };
+
+    it('オーバーライドなし rotation=0: relativePos をそのまま使う', () => {
+        const pos = getStarAbsolutePos(starNoOverride, shape3x1, 2, 3, 0);
+        expect(pos).toEqual({ x: 2, y: 4 }); // startX+0, startY+1
+    });
+
+    it('オーバーライドなし rotation=90: 数学的変換で位置を計算する', () => {
+        // rows=3, cols=1, r=1, c=0 → rotX=3-1-1=1, rotY=0
+        const pos = getStarAbsolutePos(starNoOverride, shape3x1, 0, 0, 90);
+        expect(pos).toEqual({ x: 1, y: 0 });
+    });
+
+    it('オーバーライドあり rotation=0: relativePos を使う', () => {
+        const pos = getStarAbsolutePos(starWithOverride, shape3x1, 0, 0, 0);
+        expect(pos).toEqual({ x: 0, y: 0 });
+    });
+
+    it('オーバーライドあり rotation=90: オーバーライド値を使う', () => {
+        const pos = getStarAbsolutePos(starWithOverride, shape3x1, 0, 0, 90);
+        expect(pos).toEqual({ x: 2, y: 0 }); // override {x:2,y:0}
+    });
+
+    it('オーバーライドあり rotation=180: オーバーライド値を使う', () => {
+        const pos = getStarAbsolutePos(starWithOverride, shape3x1, 1, 2, 180);
+        expect(pos).toEqual({ x: 1, y: 4 }); // startX+0, startY+2
+    });
+
+    it('オーバーライドあり rotation=270: オーバーライド値を使う', () => {
+        const pos = getStarAbsolutePos(starWithOverride, shape3x1, 3, 3, 270);
+        expect(pos).toEqual({ x: 3, y: 3 }); // startX+0, startY+0
+    });
+});
+
+describe('getStarVisualPos', () => {
+    const shape3x1 = [[1], [1], [1]];
+
+    const starNoOverride: StarDefinition = {
+        relativePos: { x: 0, y: 1 },
+        condition: { type: 'adjacent_tag', tag: 'armor' },
+    };
+    const starWithOverride: StarDefinition = {
+        relativePos: { x: 0, y: 0 },
+        relativePosOverrides: { 90: { x: 2, y: 0 } },
+        condition: { type: 'adjacent_tag', tag: 'weapon' },
+    };
+
+    it('オーバーライドなし rotation=0: relativePos をそのまま返す', () => {
+        expect(getStarVisualPos(starNoOverride, shape3x1, 0)).toEqual({ x: 0, y: 1 });
+    });
+
+    it('オーバーライドなし rotation=90: 数学的変換の結果を返す', () => {
+        expect(getStarVisualPos(starNoOverride, shape3x1, 90)).toEqual({ x: 1, y: 0 });
+    });
+
+    it('オーバーライドあり rotation=90: オーバーライド値を返す', () => {
+        expect(getStarVisualPos(starWithOverride, shape3x1, 90)).toEqual({ x: 2, y: 0 });
+    });
+
+    it('オーバーライドがない回転は数学的変換を使う', () => {
+        // starWithOverride has no override for 180
+        // rows=3, cols=1, r=0, c=0 → rotX=cols-1-c=0, rotY=rows-1-r=2
+        expect(getStarVisualPos(starWithOverride, shape3x1, 180)).toEqual({ x: 0, y: 2 });
     });
 });

@@ -1,38 +1,15 @@
 // ドラッグ可能なアイテムの定義
 import React from "react";
 import { useDraggable } from '@dnd-kit/core';
-import { ItemData, PlacedItem, Point } from '../types';
+import { ItemData, PlacedItem } from '../types';
 import { CELL_SIZE, GAP_SIZE, GRID_PADDING } from '../constants';
+import { getStarVisualPos } from '../utils/grid';
 
 interface DraggableGridItemProps {
     placedItem: PlacedItem;
     itemData: ItemData;
     litStarIndices: Set<number>; // 点灯している星のインデックス集合
     onRotate(instanceId: string): void;
-}
-
-// 星マークのshape空間上の相対座標を、回転後の視覚座標に変換する
-function getStarVisualPos(relativePos: Point, shape: number[][], rotation: number): Point {
-    const rows = shape.length;
-    const cols = shape[0].length;
-    const r = relativePos.y;
-    const c = relativePos.x;
-
-    let vx = c;
-    let vy = r;
-
-    if (rotation === 90) {
-        vx = rows - 1 - r;
-        vy = c;
-    } else if (rotation === 180) {
-        vx = cols - 1 - c;
-        vy = rows - 1 - r;
-    } else if (rotation === 270) {
-        vx = r;
-        vy = cols - 1 - c;
-    }
-
-    return { x: vx, y: vy };
 }
 
 // Gridに置かれたItemをドラッグアンドドロップ可能にする
@@ -98,7 +75,7 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({ placedItem
 
             {/* 星マークの描画 */}
             {itemData.stars?.map((star, index) => {
-                const visualPos = getStarVisualPos(star.relativePos, itemData.shape, placedItem.rotation);
+                const visualPos = getStarVisualPos(star, itemData.shape, placedItem.rotation);
                 const isLit = litStarIndices.has(index);
                 const starLeft = visualPos.x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE - 14;
                 const starTop = visualPos.y * (CELL_SIZE + GAP_SIZE) + 2;
