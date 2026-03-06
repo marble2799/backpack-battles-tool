@@ -8,54 +8,84 @@ import { getStarVisualPos } from '../utils/grid';
 interface DraggableGridItemProps {
     placedItem: PlacedItem;
     itemData: ItemData;
+    isBag: boolean;              // バッグアイテムかどうか
     litStarIndices: Set<number>; // 点灯している星のインデックス集合
     onRotate(instanceId: string): void;
 }
 
+// 6桁HEXカラーを rgba() 文字列に変換する
+function hexToRgba(hex: string, alpha: number): string {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!m) return hex;
+    return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
+}
+
 // Gridに置かれたItemをドラッグアンドドロップ可能にする
-export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({ placedItem, itemData, litStarIndices, onRotate }) => {
-    // useDraggableフックを利用し、itemにドラッグ可能属性を付与
+export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
+    placedItem, itemData, isBag, litStarIndices, onRotate,
+}) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: `grid-item-${placedItem.id}`, // ショップのアイテムとIDが被らないようにする
+        id: `grid-item-${placedItem.id}`,
         data: {
             type: 'grid',
-            id: placedItem.id,     // どのアイテムのインスタンス？
-            item: itemData         // サイズ計算用
+            id: placedItem.id,
+            item: itemData,
         },
     });
 
     // 横向きになっているか判定
     const isRotated = placedItem.rotation === 90 || placedItem.rotation === 270;
-    // 横向きなら行と列を入れ替える
     const itemCols = isRotated ? itemData.shape.length : itemData.shape[0].length;
     const itemRows = isRotated ? itemData.shape[0].length : itemData.shape.length;
 
-    // 座標計算
+    // 座標・サイズ計算
     const left = placedItem.position.x * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
-    const top = placedItem.position.y * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
-    // 幅・高さの計算
-    const width = itemCols * CELL_SIZE + (itemCols - 1) * GAP_SIZE;
+    const top  = placedItem.position.y * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
+    const width  = itemCols * CELL_SIZE + (itemCols - 1) * GAP_SIZE;
     const height = itemRows * CELL_SIZE + (itemRows - 1) * GAP_SIZE;
 
-    // 右クリックで回転処理を呼び出す
+    // 右クリック: ドラッグ中でないときだけ回転を許可
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
-        onRotate(placedItem.id);
+        if (!isDragging) {
+            onRotate(placedItem.id);
+        }
     };
 
-    // カーソルに合わせて移動させる
-    const style: React.CSSProperties = {
-        position: 'absolute',
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${width}px`,
-        height: `${height}px`,
-        backgroundColor: itemData.color,
-        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        zIndex: isDragging ? 100 : 10,
-        opacity: isDragging ? 0.8 : 1,
-        cursor: 'grab',
-    };
+    const translateStyle = transform
+        ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+        : undefined;
+
+    // バッグ: 半透明塗り + 破線ボーダー、グリッドセルの下に配置
+    // 通常アイテム: アイテムカラーで塗りつぶし、バッグより手前に配置
+    const style: React.CSSProperties = isBag
+        ? {
+            position: 'absolute',
+            left: `${left}px`,
+            top: `${top}px`,
+            width: `${width}px`,
+            height: `${height}px`,
+            backgroundColor: hexToRgba(itemData.color, 0.18),
+            border: `2px dashed ${itemData.color}`,
+            borderRadius: '4px',
+            transform: translateStyle,
+            zIndex: isDragging ? 100 : 3,   // グリッドセル(z-auto)より上、通常アイテム(z-10)より下
+            opacity: isDragging ? 0.7 : 1,
+            cursor: 'grab',
+            pointerEvents: 'auto',
+        }
+        : {
+            position: 'absolute',
+            left: `${left}px`,
+            top: `${top}px`,
+            width: `${width}px`,
+            height: `${height}px`,
+            backgroundColor: itemData.color,
+            transform: translateStyle,
+            zIndex: isDragging ? 100 : 10,
+            opacity: isDragging ? 0.8 : 1,
+            cursor: 'grab',
+        };
 
     return (
         <div
@@ -64,39 +94,55 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({ placedItem
             {...listeners}
             {...attributes}
             onContextMenu={handleContextMenu}
-            className="flex flex-col items-center p-1 bg-slate-800 rounded border border-slate-600 cursor-grab hover:bg-slate-700 active:cursor-grabbing z-50"
+            className={
+                isBag
+                    ? 'flex items-center justify-center cursor-grab active:cursor-grabbing'
+                    : 'flex flex-col items-center p-1 bg-slate-800 rounded border border-slate-600 cursor-grab hover:bg-slate-700 active:cursor-grabbing'
+            }
         >
-            <div
-                className="w-full h-full flex items-center justify-center text-xs font-bold"
-                style={{ color: itemData.color }}
-            >
-                {itemData.name}
-            </div>
-
-            {/* 星マークの描画 */}
-            {itemData.stars?.map((star, index) => {
-                const visualPos = getStarVisualPos(star, itemData.shape, placedItem.rotation);
-                const isLit = litStarIndices.has(index);
-                const starLeft = visualPos.x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE - 14;
-                const starTop = visualPos.y * (CELL_SIZE + GAP_SIZE) + 2;
-
-                return (
+            {isBag ? (
+                // バッグ: セルが透けて見えるよう最小限の表示
+                <span
+                    className="text-xs font-semibold select-none"
+                    style={{ color: itemData.color, opacity: 0.9, pointerEvents: 'none' }}
+                >
+                    {itemData.name}
+                </span>
+            ) : (
+                <>
                     <div
-                        key={index}
-                        style={{
-                            position: 'absolute',
-                            left: `${starLeft}px`,
-                            top: `${starTop}px`,
-                            fontSize: '12px',
-                            lineHeight: 1,
-                            pointerEvents: 'none',
-                            filter: isLit ? 'none' : 'grayscale(100%) opacity(40%)',
-                        }}
+                        className="w-full h-full flex items-center justify-center text-xs font-bold"
+                        style={{ color: itemData.color }}
                     >
-                        ⭐
+                        {itemData.name}
                     </div>
-                );
-            })}
+
+                    {/* 星マークの描画 */}
+                    {itemData.stars?.map((star, index) => {
+                        const visualPos = getStarVisualPos(star, itemData.shape, placedItem.rotation);
+                        const isLit = litStarIndices.has(index);
+                        const starLeft = visualPos.x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE - 14;
+                        const starTop  = visualPos.y * (CELL_SIZE + GAP_SIZE) + 2;
+
+                        return (
+                            <div
+                                key={index}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${starLeft}px`,
+                                    top: `${starTop}px`,
+                                    fontSize: '12px',
+                                    lineHeight: 1,
+                                    pointerEvents: 'none',
+                                    filter: isLit ? 'none' : 'grayscale(100%) opacity(40%)',
+                                }}
+                            >
+                                ⭐
+                            </div>
+                        );
+                    })}
+                </>
+            )}
         </div>
     );
 };

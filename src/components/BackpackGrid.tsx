@@ -63,6 +63,7 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                         key={placed.id}
                         placedItem={placed}
                         itemData={itemData}
+                        isBag={itemData.tags.includes('bag')}
                         litStarIndices={litStarIndices}
                         onRotate={onRotate}
                     />
