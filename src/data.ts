@@ -38,8 +38,8 @@ export const ITEMS: ItemData[] = [
         color: "#fbbf24",
         tags: ["weapon", "sword"],
         stars: [
-            // 中央マスに隣接する防具があると点灯
-            { relativePos: { x: 0, y: 1 }, condition: { type: "adjacent_tag", tag: "armor" } },
+            // 中央セルの右隣 (rotation=0: 右, 90: 下, 180: 左, 270: 上 — 数学的回転で自動計算)
+            { relativePos: { x: 1, y: 1 }, condition: { type: "at_position", tag: "armor" } },
         ],
     },
     {
@@ -54,25 +54,15 @@ export const ITEMS: ItemData[] = [
         color: "#6b7280",
         tags: ["weapon", "sword"],
         stars: [
-            // 上端セルの星: 縦向き(0°/180°)では上、横向き(90°/270°)では左端
+            // 上端セルの上 (rotation=0: 上, 90: 右, 180: 下, 270: 左 — 数学的回転で自動計算)
             {
-                relativePos: { x: 0, y: 0 },
-                relativePosOverrides: {
-                    90:  { x: 0, y: 0 },
-                    180: { x: 0, y: 2 },
-                    270: { x: 2, y: 0 },
-                },
-                condition: { type: "adjacent_tag", tag: "weapon" },
+                relativePos: { x: 0, y: -1 },
+                condition: { type: "at_position", tag: "weapon" },
             },
-            // 下端セルの星: 縦向き(0°/180°)では下、横向き(90°/270°)では右端
+            // 下端セルの下 (rotation=0: 下, 90: 左, 180: 上, 270: 右)
             {
-                relativePos: { x: 0, y: 2 },
-                relativePosOverrides: {
-                    90:  { x: 2, y: 0 },
-                    180: { x: 0, y: 0 },
-                    270: { x: 0, y: 0 },
-                },
-                condition: { type: "adjacent_tag", tag: "weapon" },
+                relativePos: { x: 0, y: 3 },
+                condition: { type: "at_position", tag: "weapon" },
             },
         ],
     },
@@ -88,8 +78,8 @@ export const ITEMS: ItemData[] = [
         color: "#9ca3af",
         tags: ["armor", "shield"],
         stars: [
-            // 左上マスに隣接する武器があると点灯
-            { relativePos: { x: 0, y: 0 }, condition: { type: "adjacent_tag", tag: "weapon" } },
+            // 左上セルの左隣 (rotation=0: 左, 90: 上, 180: 右, 270: 下 — 数学的回転で自動計算)
+            { relativePos: { x: -1, y: 0 }, condition: { type: "at_position", tag: "weapon" } },
         ],
     },
     // ===== 消耗品系 =====
@@ -101,8 +91,16 @@ export const ITEMS: ItemData[] = [
         color: "#ef4444",
         tags: ["consumable", "potion"],
         stars: [
-            // 隣接するポーションがあると点灯
-            { relativePos: { x: 0, y: 0 }, condition: { type: "adjacent_tag", tag: "potion" } },
+            // 1×1なので回転しても見た目が変わらない → 常に1マス上
+            {
+                relativePos: { x: 0, y: -1 },
+                relativePosOverrides: {
+                    90:  { x: 0, y: -1 },
+                    180: { x: 0, y: -1 },
+                    270: { x: 0, y: -1 },
+                },
+                condition: { type: "at_position", tag: "potion" },
+            },
         ],
     },
     {
@@ -113,8 +111,8 @@ export const ITEMS: ItemData[] = [
         color: "#22c55e",
         tags: ["consumable", "herb"],
         stars: [
-            // 左マスに隣接するポーションがあると点灯
-            { relativePos: { x: 0, y: 0 }, condition: { type: "adjacent_tag", tag: "potion" } },
+            // 左端セルの左隣 (rotation=0: 左, 90: 上, 180: 右, 270: 下 — 数学的回転で自動計算)
+            { relativePos: { x: -1, y: 0 }, condition: { type: "at_position", tag: "potion" } },
         ],
     },
 ];

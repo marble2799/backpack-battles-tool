@@ -224,25 +224,11 @@ export function computeLitStars(
                 placed.position.x, placed.position.y,
                 placed.rotation,
             );
-            const absX = absPos.x;
-            const absY = absPos.y;
-
-            // 4方向の隣接セルを確認
-            const adjacentCells = [
-                { x: absX + 1, y: absY },
-                { x: absX - 1, y: absY },
-                { x: absX, y: absY + 1 },
-                { x: absX, y: absY - 1 },
-            ];
-
-            if (star.condition.type === 'adjacent_tag') {
-                for (const adjCell of adjacentCells) {
-                    const entry = occupationMap.get(`${adjCell.x},${adjCell.y}`);
-                    // 自分自身のセルは除外
-                    if (entry && entry.placed.id !== placed.id && entry.itemData.tags.includes(star.condition.tag)) {
-                        litStars.add(`${placed.id}-${starIndex}`);
-                        break;
-                    }
+            // 星のセル自体を占有しているアイテムを確認 (自分自身は除外)
+            if (star.condition.type === 'at_position') {
+                const entry = occupationMap.get(`${absPos.x},${absPos.y}`);
+                if (entry && entry.placed.id !== placed.id && entry.itemData.tags.includes(star.condition.tag)) {
+                    litStars.add(`${placed.id}-${starIndex}`);
                 }
             }
         });

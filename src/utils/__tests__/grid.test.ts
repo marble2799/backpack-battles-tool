@@ -13,27 +13,30 @@ import { ItemData, PlacedItem, StarDefinition } from '../../types';
 
 // ===== テスト用データ =====
 
+// SWORD: 3×1縦, 星=中央セルの右隣 (1, 1)
 const SWORD: ItemData = {
     id: 'sword',
     name: '剣',
     icon: 'sword',
-    shape: [[1], [1], [1]], // 縦1x3
+    shape: [[1], [1], [1]],
     color: '#fff',
     tags: ['weapon', 'sword'],
     stars: [
-        { relativePos: { x: 0, y: 1 }, condition: { type: 'adjacent_tag', tag: 'armor' } },
+        // 中央セルの右隣: アイテム外 (relativePos.x=1 はアイテムの右外)
+        { relativePos: { x: 1, y: 1 }, condition: { type: 'at_position', tag: 'armor' } },
     ],
 };
 
+// SHIELD: 2×2, 星=左上セルの左隣 (-1, 0)
 const SHIELD: ItemData = {
     id: 'shield',
     name: '盾',
     icon: 'shield',
-    shape: [[1, 1], [1, 1]], // 2x2
+    shape: [[1, 1], [1, 1]],
     color: '#fff',
     tags: ['armor', 'shield'],
     stars: [
-        { relativePos: { x: 0, y: 0 }, condition: { type: 'adjacent_tag', tag: 'weapon' } },
+        { relativePos: { x: -1, y: 0 }, condition: { type: 'at_position', tag: 'weapon' } },
     ],
 };
 
@@ -41,11 +44,12 @@ const BAG: ItemData = {
     id: 'bag',
     name: 'バッグ',
     icon: 'bag',
-    shape: [[1, 1, 1], [1, 1, 1]], // 3x2
+    shape: [[1, 1, 1], [1, 1, 1]],
     color: '#fff',
     tags: ['bag'],
 };
 
+// POTION: 1×1, 星=常に1マス上 (overrides で全回転固定)
 const POTION: ItemData = {
     id: 'potion',
     name: 'ポーション',
@@ -54,7 +58,11 @@ const POTION: ItemData = {
     color: '#f00',
     tags: ['consumable', 'potion'],
     stars: [
-        { relativePos: { x: 0, y: 0 }, condition: { type: 'adjacent_tag', tag: 'potion' } },
+        {
+            relativePos: { x: 0, y: -1 },
+            relativePosOverrides: { 90: { x: 0, y: -1 }, 180: { x: 0, y: -1 }, 270: { x: 0, y: -1 } },
+            condition: { type: 'at_position', tag: 'potion' },
+        },
     ],
 };
 
@@ -216,9 +224,11 @@ describe('isOnBagCells', () => {
 });
 
 // ===== computeLitStars テスト =====
+// 星の位置 = アイテム外のセル。そのセルに条件タグのアイテムがいれば点灯。
 
 describe('computeLitStars', () => {
-    it('条件を満たす隣接アイテムがない場合は空のセットを返す', () => {
+    it('星のセルに何もなければ点灯しない', () => {
+        // SWORD star at (1,1) relative → abs (1,1). Nothing there.
         const placedSword: PlacedItem = {
             id: 'sword-1', itemId: 'sword', position: { x: 0, y: 0 }, rotation: 0,
         };
@@ -226,10 +236,9 @@ describe('computeLitStars', () => {
         expect(lit.size).toBe(0);
     });
 
-    it('剣の隣に盾があれば剣の星が点灯する', () => {
-        // sword at (0,0): occupies (0,0),(0,1),(0,2) — star at (0,1) = abs (0,1)
-        // shield at (1,1): occupies (1,1),(2,1),(1,2),(2,2)
-        // Adjacent to (0,1): right=(1,1) which is part of shield → condition tag 'armor' ✓
+    it('剣の星セル (1,1) に盾が置かれたら剣の星が点灯する', () => {
+        // SWORD at (0,0): star relativePos={x:1,y:1} → abs (1,1)
+        // SHIELD at (1,1): occupies (1,1),(2,1),(1,2),(2,2) → has tag 'armor' at (1,1) ✓
         const placedSword: PlacedItem = {
             id: 'sword-1', itemId: 'sword', position: { x: 0, y: 0 }, rotation: 0,
         };
@@ -240,10 +249,9 @@ describe('computeLitStars', () => {
         expect(lit.has('sword-1-0')).toBe(true);
     });
 
-    it('盾の隣に剣があれば盾の星が点灯する', () => {
-        // shield at (2,0): occupies (2,0),(3,0),(2,1),(3,1) — star at (2,0) = abs (2,0)
-        // sword at (0,0): occupies (0,0),(0,1),(0,2) — no adjacency to (2,0)
-        // sword at (1,0): occupies (1,0),(1,1),(1,2) — adjacent to (2,0) is (1,0) ✓ tag 'weapon'
+    it('盾の星セル (-1,0) → abs (1,0) に剣が置かれたら盾の星が点灯する', () => {
+        // SHIELD at (2,0): star relativePos={x:-1,y:0} → abs (2-1, 0+0) = (1,0)
+        // SWORD at (1,0): occupies (1,0),(1,1),(1,2) → has tag 'weapon' at (1,0) ✓
         const placedShield: PlacedItem = {
             id: 'shield-1', itemId: 'shield', position: { x: 2, y: 0 }, rotation: 0,
         };
@@ -254,34 +262,32 @@ describe('computeLitStars', () => {
         expect(lit.has('shield-1-0')).toBe(true);
     });
 
-    it('同じアイテム自身のセルは条件判定に使わない', () => {
-        // potion の star は "隣接ポーション" が必要 — 自分自身は除外される
+    it('同じアイテム自身は点灯条件に使わない', () => {
+        // POTION at (0,1): star abs (0,0). Nothing else is at (0,0).
         const placedPotion: PlacedItem = {
-            id: 'potion-1', itemId: 'potion', position: { x: 0, y: 0 }, rotation: 0,
+            id: 'potion-1', itemId: 'potion', position: { x: 0, y: 1 }, rotation: 0,
         };
         const lit = computeLitStars([placedPotion], ALL_ITEMS);
         expect(lit.has('potion-1-0')).toBe(false);
     });
 
-    it('ポーション同士が隣接すれば両方の星が点灯する', () => {
+    it('ポーション at (0,1) の星セル (0,0) に別ポーションが置かれれば点灯する', () => {
+        // potion1 at (0,1): star abs (0,0)
+        // potion2 at (0,0): has tag 'potion' at (0,0) ✓
         const potion1: PlacedItem = {
-            id: 'potion-1', itemId: 'potion', position: { x: 0, y: 0 }, rotation: 0,
+            id: 'potion-1', itemId: 'potion', position: { x: 0, y: 1 }, rotation: 0,
         };
         const potion2: PlacedItem = {
-            id: 'potion-2', itemId: 'potion', position: { x: 1, y: 0 }, rotation: 0,
+            id: 'potion-2', itemId: 'potion', position: { x: 0, y: 0 }, rotation: 0,
         };
         const lit = computeLitStars([potion1, potion2], ALL_ITEMS);
         expect(lit.has('potion-1-0')).toBe(true);
-        expect(lit.has('potion-2-0')).toBe(true);
     });
 
-    it('回転した剣の星も正しく計算される', () => {
-        // sword rotation=90: shape[[1],[1],[1]], rows=3, cols=1
-        // star at relativePos {x:0,y:1}
-        // rotation=90: rotX=rows-1-r=3-1-1=1, rotY=c=0 → star abs pos = (startX+1, startY+0)
-        // sword at (0,0) rotated 90: star at abs (1,0)
-        // shield at (1,1): occupies (1,1),(2,1),(1,2),(2,2)
-        // Adjacent to (1,0): down=(1,1) which has shield tag 'armor' ✓
+    it('回転した剣の星セルも正しく計算される', () => {
+        // SWORD at (0,0) rotation=90: star relativePos={x:1,y:1}
+        // rows=3, cols=1, r=1, c=1 → rotation90: rotX=3-1-1=1, rotY=1 → abs (0+1, 0+1) = (1,1)
+        // SHIELD at (1,1): has tag 'armor' at (1,1) ✓
         const placedSword: PlacedItem = {
             id: 'sword-1', itemId: 'sword', position: { x: 0, y: 0 }, rotation: 90,
         };
@@ -292,8 +298,8 @@ describe('computeLitStars', () => {
         expect(lit.has('sword-1-0')).toBe(true);
     });
 
-    it('隣接していても条件タグが違えば点灯しない', () => {
-        // sword star requires 'armor' — placing another sword next to it should not light it
+    it('星セルに条件タグと違うアイテムがいても点灯しない', () => {
+        // SWORD star requires 'armor' at (1,1). Another SWORD at (1,1) has tag 'weapon', not 'armor'.
         const sword1: PlacedItem = {
             id: 'sword-1', itemId: 'sword', position: { x: 0, y: 0 }, rotation: 0,
         };
@@ -302,6 +308,19 @@ describe('computeLitStars', () => {
         };
         const lit = computeLitStars([sword1, sword2], ALL_ITEMS);
         expect(lit.has('sword-1-0')).toBe(false);
+    });
+
+    it('1×1ポーションのoverrides: 全回転で星は常に1マス上', () => {
+        // potion at (3,3) rotation=90: override {x:0,y:-1} → abs (3, 2)
+        // another potion at (3,2) ✓
+        const potion1: PlacedItem = {
+            id: 'potion-1', itemId: 'potion', position: { x: 3, y: 3 }, rotation: 90,
+        };
+        const potion2: PlacedItem = {
+            id: 'potion-2', itemId: 'potion', position: { x: 3, y: 2 }, rotation: 0,
+        };
+        const lit = computeLitStars([potion1, potion2], ALL_ITEMS);
+        expect(lit.has('potion-1-0')).toBe(true);
     });
 });
 

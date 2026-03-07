@@ -3,13 +3,11 @@ import React from "react";
 import { useDraggable } from '@dnd-kit/core';
 import { ItemData, PlacedItem } from '../types';
 import { CELL_SIZE, GAP_SIZE, GRID_PADDING } from '../constants';
-import { getStarVisualPos } from '../utils/grid';
 
 interface DraggableGridItemProps {
     placedItem: PlacedItem;
     itemData: ItemData;
     isBag: boolean;              // バッグアイテムかどうか
-    litStarIndices: Set<number>; // 点灯している星のインデックス集合
     onRotate(instanceId: string): void;
 }
 
@@ -22,7 +20,7 @@ function hexToRgba(hex: string, alpha: number): string {
 
 // Gridに置かれたItemをドラッグアンドドロップ可能にする
 export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
-    placedItem, itemData, isBag, litStarIndices, onRotate,
+    placedItem, itemData, isBag, onRotate,
 }) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `grid-item-${placedItem.id}`,
@@ -44,7 +42,7 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
     const width  = itemCols * CELL_SIZE + (itemCols - 1) * GAP_SIZE;
     const height = itemRows * CELL_SIZE + (itemRows - 1) * GAP_SIZE;
 
-    // 右クリック: ドラッグ中でないときだけ回転を許可
+    // 右クリック: ドラッグ中のときだけ回転を許可
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
         if (isDragging) {
@@ -57,7 +55,7 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
         : undefined;
 
     // バッグ: 半透明塗り + 破線ボーダー、グリッドセルの下に配置
-    // 通常アイテム: アイテムカラーで塗りつぶし、バッグより手前に配置
+    // 通常アイテム: アイテムカラーで塗りつぶし
     const style: React.CSSProperties = isBag
         ? {
             position: 'absolute',
@@ -69,7 +67,7 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
             border: `2px dashed ${itemData.color}`,
             borderRadius: '4px',
             transform: translateStyle,
-            zIndex: isDragging ? 100 : 3,   // グリッドセル(z-auto)より上、通常アイテム(z-10)より下
+            zIndex: isDragging ? 100 : 3,
             opacity: isDragging ? 0.7 : 1,
             cursor: 'grab',
             pointerEvents: 'auto',
@@ -101,7 +99,6 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
             }
         >
             {isBag ? (
-                // バッグ: セルが透けて見えるよう最小限の表示
                 <span
                     className="text-xs font-semibold select-none"
                     style={{ color: itemData.color, opacity: 0.9, pointerEvents: 'none' }}
@@ -109,39 +106,12 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
                     {itemData.name}
                 </span>
             ) : (
-                <>
-                    <div
-                        className="w-full h-full flex items-center justify-center text-xs font-bold"
-                        style={{ color: itemData.color }}
-                    >
-                        {itemData.name}
-                    </div>
-
-                    {/* 星マークの描画 */}
-                    {itemData.stars?.map((star, index) => {
-                        const visualPos = getStarVisualPos(star, itemData.shape, placedItem.rotation);
-                        const isLit = litStarIndices.has(index);
-                        const starLeft = visualPos.x * (CELL_SIZE + GAP_SIZE) + CELL_SIZE - 14;
-                        const starTop  = visualPos.y * (CELL_SIZE + GAP_SIZE) + 2;
-
-                        return (
-                            <div
-                                key={index}
-                                style={{
-                                    position: 'absolute',
-                                    left: `${starLeft}px`,
-                                    top: `${starTop}px`,
-                                    fontSize: '12px',
-                                    lineHeight: 1,
-                                    pointerEvents: 'none',
-                                    filter: isLit ? 'none' : 'grayscale(100%) opacity(40%)',
-                                }}
-                            >
-                                ⭐
-                            </div>
-                        );
-                    })}
-                </>
+                <div
+                    className="w-full h-full flex items-center justify-center text-xs font-bold"
+                    style={{ color: itemData.color }}
+                >
+                    {itemData.name}
+                </div>
             )}
         </div>
     );

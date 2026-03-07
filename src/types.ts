@@ -6,7 +6,8 @@ export type Point = {
 
 export type Rotation = 0 | 90 | 180 | 270;
 
-export type StarConditionType = 'adjacent_tag';
+// 'at_position': 星のセルに指定タグのアイテムが置かれているとき点灯
+export type StarConditionType = 'at_position';
 
 export interface StarCondition {
     type: StarConditionType;

@@ -3,7 +3,7 @@ import { DroppableCell } from "./DroppableCell";
 import { PlacedItem, ItemData } from '../types';
 import { DraggableGridItem } from "./DraggableGridItem";
 import { CELL_SIZE, GAP_SIZE, GRID_PADDING } from "../constants";
-import { getBagCells } from "../utils/grid";
+import { getBagCells, getStarAbsolutePos } from "../utils/grid";
 
 interface BackpackGridProps {
     rows: number;
@@ -21,6 +21,12 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
 
     // バッグアイテムが覆っているセルの集合を計算
     const bagCells = getBagCells(placedItems, itemsData);
+
+    // セル座標 → ピクセル座標 (セル左上)
+    const cellToPixel = (gx: number, gy: number) => ({
+        left: gx * (CELL_SIZE + GAP_SIZE) + GRID_PADDING,
+        top:  gy * (CELL_SIZE + GAP_SIZE) + GRID_PADDING,
+    });
 
     return (
         <div
@@ -47,27 +53,60 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
             {placedItems.map((placed) => {
                 const itemData = itemsData.find(d => d.id === placed.itemId);
                 if (!itemData) return null;
-
-                // このアイテムの点灯星インデックスを抽出
-                const litStarIndices = new Set<number>();
-                if (itemData.stars) {
-                    itemData.stars.forEach((_, i) => {
-                        if (litStars.has(`${placed.id}-${i}`)) {
-                            litStarIndices.add(i);
-                        }
-                    });
-                }
-
                 return (
                     <DraggableGridItem
                         key={placed.id}
                         placedItem={placed}
                         itemData={itemData}
                         isBag={itemData.tags.includes('bag')}
-                        litStarIndices={litStarIndices}
                         onRotate={onRotate}
                     />
                 );
+            })}
+
+            {/* 星マークの描画 (アイテム外側のグリッドセルに絶対配置) */}
+            {placedItems.flatMap((placed) => {
+                const itemData = itemsData.find(d => d.id === placed.itemId);
+                if (!itemData?.stars) return [];
+
+                return itemData.stars.map((star, starIndex) => {
+                    const absPos = getStarAbsolutePos(
+                        star, itemData.shape,
+                        placed.position.x, placed.position.y,
+                        placed.rotation,
+                    );
+
+                    // グリッド範囲外の星は描画しない
+                    if (absPos.x < 0 || absPos.x >= cols || absPos.y < 0 || absPos.y >= rows) {
+                        return null;
+                    }
+
+                    const isLit = litStars.has(`${placed.id}-${starIndex}`);
+                    const { left, top } = cellToPixel(absPos.x, absPos.y);
+
+                    return (
+                        <div
+                            key={`star-${placed.id}-${starIndex}`}
+                            style={{
+                                position: 'absolute',
+                                left: `${left}px`,
+                                top: `${top}px`,
+                                width: `${CELL_SIZE}px`,
+                                height: `${CELL_SIZE}px`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '14px',
+                                lineHeight: 1,
+                                zIndex: 20,
+                                pointerEvents: 'none',
+                                filter: isLit ? 'none' : 'grayscale(100%) opacity(35%)',
+                            }}
+                        >
+                            ⭐
+                        </div>
+                    );
+                });
             })}
         </div>
     );
