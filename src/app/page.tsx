@@ -1,59 +1,108 @@
 "use client"; // Next.jsでHookを使うためのおまじない
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { ITEMS } from "../data";
 import { BackpackGrid } from "../components/BackpackGrid";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
 import { DraggableShopItem } from "../components/DraggableShopItem";
 import { PlacedItem, ItemData } from '../types';
-import { getOccupiedCells, isOutOfBounds, getOverlappingItems, canPlaceItem } from "../utils/grid";
-import { GRID_COLS, GRID_ROWS } from "../constants";
+import { getOccupiedCells, isOutOfBounds, getOverlappingItems, getBagCells, isOnBagCells, computeLitStars } from "../utils/grid";
+import { GRID_COLS, GRID_ROWS, CELL_SIZE, GAP_SIZE } from "../constants";
+
+// 初期配置: スターターバッグをグリッド中央付近に置く
+const INITIAL_PLACED_ITEMS: PlacedItem[] = [
+    {
+        id: 'starter_bag-initial',
+        itemId: 'starter_bag',
+        position: { x: 2, y: 2 },
+        rotation: 0,
+    },
+];
 
 export default function Home() {
-    // 配置されたアイテムの状態を保存
-    const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
-    
+    const [placedItems, setPlacedItems] = useState<PlacedItem[]>(INITIAL_PLACED_ITEMS);
+    // ショップからドラッグ中のアイテム（DragOverlay で展開表示するため）
+    const [dragOverlayItem, setDragOverlayItem] = useState<ItemData | null>(null);
+    // ドラッグ開始時の回転を保存（バッグ判定失敗時に復元するため）
+    const preDragRotationRef = useRef<{ id: string; rotation: 0 | 90 | 180 | 270 } | null>(null);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        const data = event.active.data.current;
+        if (data?.type === 'shop') {
+            setDragOverlayItem(data.item as ItemData);
+        } else if (data?.type === 'grid') {
+            const existing = placedItems.find(p => p.id === data.id);
+            if (existing) {
+                preDragRotationRef.current = { id: data.id, rotation: existing.rotation };
+            }
+        }
+    };
+
+    // 点灯している星を計算 (placedItemsが変わるたびに再計算)
+    const litStars = useMemo(() => computeLitStars(placedItems, ITEMS), [placedItems]);
+
     // アイテムを90度回転させる
     const handleRotate = (instanceId: string) => {
         setPlacedItems((prev) => prev.map((item) => {
             if (item.id === instanceId) {
-                // 90度足して、360度になったら0に戻す
                 const newRotation = (item.rotation + 90) % 360 as 0 | 90 | 180 | 270;
-                return {...item, rotation: newRotation};
+                return { ...item, rotation: newRotation };
             }
             return item;
         }));
-    }
-    
+    };
+
+    // バッグ以外のアイテムをすべて削除する
+    const handleReset = () => {
+        setPlacedItems(prev => prev.filter(p => {
+            const itemData = ITEMS.find(d => d.id === p.itemId);
+            return itemData?.tags.includes('bag') ?? false;
+        }));
+    };
+
+    // バッグを動かした/削除したあと、バッグ外に出たアイテムを削除する
+    const cleanupItemsOutsideBags = (items: PlacedItem[]): PlacedItem[] => {
+        const bagCells = getBagCells(items, ITEMS);
+        return items.filter(p => {
+            const itemData = ITEMS.find(d => d.id === p.itemId);
+            if (!itemData) return false;
+            if (itemData.tags.includes('bag')) return true; // バッグ自体は残す
+            const cells = getOccupiedCells(itemData.shape, p.position.x, p.position.y, p.rotation);
+            return isOnBagCells(cells, bagCells);
+        });
+    };
+
     // ドラッグ終了時の処理を行う
     const handleDragEnd = (event: DragEndEvent) => {
-        // active: 今掴んでいるもの, over: マウスカーソルの下にある要素
         const { active, over } = event;
 
-        // どのアイテムを掴んだ？
         const activeData = active.data.current; // {type: 'shop' | 'grid',...}
-        console.log(activeData);
         if (!activeData) return;
 
         // ドロップ先に何もない場合
         if (!over) {
             // グリッド上のアイテムを外にドロップした場合は削除する
             if (activeData.type === 'grid') {
-                setPlacedItems((prev) => prev.filter(p => p.id !== activeData.id));
+                setPlacedItems((prev) => {
+                    const removed = prev.filter(p => p.id !== activeData.id);
+                    // バッグを削除した場合、バッグ外に出たアイテムも削除
+                    return cleanupItemsOutsideBags(removed);
+                });
             }
             return;
         }
 
-        // active.data.currentとover.data.currentに仕込んだデータを取り出す
         const x = over.data.current?.x;
         const y = over.data.current?.y;
         if (x === undefined || y === undefined) return;
 
         // 配置しようとしているアイテムの情報を取得
-        const item = activeData.type === 'shop' ? activeData.item : ITEMS.find(d => d.id === activeData.item.id);
+        const item: ItemData | undefined = activeData.type === 'shop'
+            ? activeData.item
+            : ITEMS.find(d => d.id === activeData.item.id);
         if (!item) return;
 
-        // グリッド状のアイテムなら現在の回転角度を、ショップなら0度を取得
+        // グリッド上のアイテムなら現在の回転角度を、ショップなら0度を取得
         let currentRotation: 0 | 90 | 180 | 270 = 0;
         if (activeData.type === 'grid') {
             const existingItem = placedItems.find(p => p.id === activeData.id);
@@ -64,63 +113,143 @@ export default function Home() {
 
         // 境界判定
         if (isOutOfBounds(newCells, GRID_COLS, GRID_ROWS)) {
-            if (activeData.type === 'grid') { // gridからはみ出たら削除
-                setPlacedItems((prev) => prev.filter(p => p.id !== activeData.id));
+            if (activeData.type === 'grid') {
+                setPlacedItems((prev) => {
+                    const removed = prev.filter(p => p.id !== activeData.id);
+                    return cleanupItemsOutsideBags(removed);
+                });
             }
             return;
         }
 
+        // バッグ以外のアイテムはバッグセル上にしか置けない
+        const isBagItem = item.tags.includes('bag');
+        if (!isBagItem) {
+            // 移動中のアイテム自身を除いた placedItems でバッグセルを計算
+            const ignoreId = activeData.type === 'grid' ? activeData.id : undefined;
+            const itemsForBagCheck = ignoreId
+                ? placedItems.filter(p => p.id !== ignoreId)
+                : placedItems;
+            const bagCells = getBagCells(itemsForBagCheck, ITEMS);
+
+            if (!isOnBagCells(newCells, bagCells)) {
+                // バッグ外にはドロップできない: ドラッグ中に回転していた場合は元の回転に戻す
+                const saved = preDragRotationRef.current;
+                if (activeData.type === 'grid' && saved !== null && saved.id === activeData.id) {
+                    const savedRotation = saved.rotation;
+                    setPlacedItems(prev => prev.map(p =>
+                        p.id === activeData.id ? { ...p, rotation: savedRotation } : p
+                    ));
+                }
+                preDragRotationRef.current = null;
+                return;
+            }
+        }
+
         // 衝突判定(重なったアイテムのIDを取得)
+        // バッグは「床レイヤー」、通常アイテムは「アイテムレイヤー」として
+        // 同じレイヤー内のアイテムのみを対象にする
         const ignoreId = activeData.type === 'grid' ? activeData.id : undefined;
-        const overlappingIds = getOverlappingItems(newCells, placedItems, ITEMS, ignoreId);
+        const sameLayerItems = placedItems.filter(p => {
+            const d = ITEMS.find(i => i.id === p.itemId);
+            return isBagItem ? d?.tags.includes('bag') : !d?.tags.includes('bag');
+        });
+        const overlappingIds = getOverlappingItems(newCells, sameLayerItems, ITEMS, ignoreId);
 
         // 実際に状態の更新
         setPlacedItems((prev) => {
-            // 重なっているアイテムを除外
             const filtered = prev.filter(p => !overlappingIds.includes(p.id));
 
+            let newItems: PlacedItem[];
             if (activeData.type === 'shop') {
-                // ショップからの追加
                 const newItem: PlacedItem = {
                     id: `${item.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     itemId: item.id,
-                    position: {x, y},
+                    position: { x, y },
                     rotation: 0,
                 };
-                return [...filtered, newItem];
-            }else { // grid上の場合
-                return filtered.map(p => p.id === activeData.id ? {...p, position: {x, y}}:p);
+                newItems = [...filtered, newItem];
+            } else {
+                newItems = filtered.map(p =>
+                    p.id === activeData.id ? { ...p, position: { x, y } } : p
+                );
             }
-        });
-    }
 
+            // バッグを移動した場合、バッグ外に出たアイテムを削除
+            return cleanupItemsOutsideBags(newItems);
+        });
+        preDragRotationRef.current = null;
+        setDragOverlayItem(null);
+    };
 
     return (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-slate-900 text-white">
-                    <h1 className="text-3xl font-bold">Backpack Battles Simulator</h1>
+                <h1 className="text-3xl font-bold mb-8">Backpack Battles Simulator</h1>
 
-                    <div className="flex flex-row gap-12 items-start">
-                        {/* 左側にバックパックエリアを設定*/}
-                        <div className="flex flex-col items-center gap-4">
-                            <h2 className="text-xl font-semibold">BackPack Area</h2>
-                            {/* 現在の状態(=placedItems)を渡す */}
-                            <BackpackGrid rows={GRID_ROWS} cols={GRID_COLS} placedItems={placedItems} itemsData={ITEMS} onRotate={handleRotate}/>
-                        </div>
+                <div className="flex flex-row gap-12 items-start">
+                    {/* 左側にバックパックエリアを設定 */}
+                    <div className="flex flex-col items-center gap-4">
+                        <h2 className="text-xl font-semibold">BackPack Area</h2>
+                        <BackpackGrid
+                            rows={GRID_ROWS}
+                            cols={GRID_COLS}
+                            placedItems={placedItems}
+                            itemsData={ITEMS}
+                            litStars={litStars}
+                            onRotate={handleRotate}
+                        />
+                        {/* リセットボタン */}
+                        <button
+                            onClick={handleReset}
+                            className="mt-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
+                        >
+                            リセット（バッグ以外を削除）
+                        </button>
+                        <p className="text-xs text-slate-400">
+                            右クリック: アイテムを回転 | 暗いマス: バッグ未配置（アイテム不可）
+                        </p>
+                    </div>
 
-                        {/*右側にはアイテムリストを表示*/}
-                        <div className="flex flex-col items-center gap-4">
-                            <h2 className="text-xl font-semibold">Item List</h2>
-                            <div className="flex flex-wrap gap-4 max-w-md">
-                                {/* 定義したデータ(Item)を表示 */}
-                                {ITEMS.map((item) => (
-                                    // ラッパーコンポーネントを使用
-                                    <DraggableShopItem key={item.id} item={item}/>
-                                ))}
-                            </div>
+                    {/* 右側にはアイテムリストを表示 */}
+                    <div className="flex flex-col items-center gap-4">
+                        <h2 className="text-xl font-semibold">Item List</h2>
+                        <div className="flex flex-wrap gap-4 max-w-md">
+                            {ITEMS.map((item) => (
+                                <DraggableShopItem key={item.id} item={item} />
+                            ))}
                         </div>
                     </div>
+                </div>
             </main>
+
+            {/* ショップからドラッグ中: アイテムを実際のサイズで展開表示 */}
+            <DragOverlay dropAnimation={null}>
+                {dragOverlayItem && (() => {
+                    const cols = dragOverlayItem.shape[0].length;
+                    const rows = dragOverlayItem.shape.length;
+                    const width  = cols * CELL_SIZE + (cols - 1) * GAP_SIZE;
+                    const height = rows * CELL_SIZE + (rows - 1) * GAP_SIZE;
+                    return (
+                        <div style={{
+                            width,
+                            height,
+                            backgroundColor: dragOverlayItem.color,
+                            opacity: 0.85,
+                            borderRadius: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            color: '#fff',
+                            pointerEvents: 'none',
+                        }}>
+                            {dragOverlayItem.name}
+                        </div>
+                    );
+})()}
+            </DragOverlay>
         </DndContext>
     );
 }

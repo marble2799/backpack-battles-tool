@@ -1,13 +1,13 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Point } from '../types';
 
 interface DroppableCellProps {
     x: number;
     y: number;
+    isBagCell: boolean; // バッグアイテムが覆っているセルかどうか
 }
 
-export const DroppableCell: React.FC<DroppableCellProps> = ({ x, y }) => {
+export const DroppableCell: React.FC<DroppableCellProps> = ({ x, y, isBagCell }) => {
     const { isOver, setNodeRef } = useDroppable({
         id: `cell-${x}-${y}`, // マス目固有のID (例: cell-0-0)
         data: { x, y }, // ドロップ時に取り出す座標データ
@@ -16,8 +16,12 @@ export const DroppableCell: React.FC<DroppableCellProps> = ({ x, y }) => {
     return (
         <div
             ref={setNodeRef}
-            className={`w-10 h-10 border border-slate-600 rounded-sm transition-colors ${
-                isOver ? 'bg-slate-500' : 'bg-slate-700' // ドラッグ中のアイテムが上に来たら色を変える
+            className={`w-10 h-10 border rounded-sm transition-colors ${
+                isBagCell
+                    ? isOver
+                        ? 'bg-slate-500 border-slate-400'
+                        : 'bg-slate-700 border-slate-600'
+                    : 'bg-slate-950 border-slate-800'
             }`}
         />
     );
