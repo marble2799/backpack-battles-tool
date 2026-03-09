@@ -1,13 +1,13 @@
 "use client"; // Next.jsでHookを使うためのおまじない
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { ITEMS } from "../data";
 import { BackpackGrid } from "../components/BackpackGrid";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
 import { DraggableShopItem } from "../components/DraggableShopItem";
 import { PlacedItem, ItemData } from '../types';
 import { getOccupiedCells, isOutOfBounds, getOverlappingItems, getBagCells, isOnBagCells, computeLitStars } from "../utils/grid";
-import { GRID_COLS, GRID_ROWS } from "../constants";
+import { GRID_COLS, GRID_ROWS, CELL_SIZE, GAP_SIZE } from "../constants";
 
 // 初期配置: スターターバッグをグリッド中央付近に置く
 const INITIAL_PLACED_ITEMS: PlacedItem[] = [
@@ -21,6 +21,22 @@ const INITIAL_PLACED_ITEMS: PlacedItem[] = [
 
 export default function Home() {
     const [placedItems, setPlacedItems] = useState<PlacedItem[]>(INITIAL_PLACED_ITEMS);
+    // ショップからドラッグ中のアイテム（DragOverlay で展開表示するため）
+    const [dragOverlayItem, setDragOverlayItem] = useState<ItemData | null>(null);
+    // ドラッグ開始時の回転を保存（バッグ判定失敗時に復元するため）
+    const preDragRotationRef = useRef<{ id: string; rotation: 0 | 90 | 180 | 270 } | null>(null);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        const data = event.active.data.current;
+        if (data?.type === 'shop') {
+            setDragOverlayItem(data.item as ItemData);
+        } else if (data?.type === 'grid') {
+            const existing = placedItems.find(p => p.id === data.id);
+            if (existing) {
+                preDragRotationRef.current = { id: data.id, rotation: existing.rotation };
+            }
+        }
+    };
 
     // 点灯している星を計算 (placedItemsが変わるたびに再計算)
     const litStars = useMemo(() => computeLitStars(placedItems, ITEMS), [placedItems]);
@@ -117,7 +133,15 @@ export default function Home() {
             const bagCells = getBagCells(itemsForBagCheck, ITEMS);
 
             if (!isOnBagCells(newCells, bagCells)) {
-                // バッグ外にはドロップできない (スナップバック)
+                // バッグ外にはドロップできない: ドラッグ中に回転していた場合は元の回転に戻す
+                const saved = preDragRotationRef.current;
+                if (activeData.type === 'grid' && saved !== null && saved.id === activeData.id) {
+                    const savedRotation = saved.rotation;
+                    setPlacedItems(prev => prev.map(p =>
+                        p.id === activeData.id ? { ...p, rotation: savedRotation } : p
+                    ));
+                }
+                preDragRotationRef.current = null;
                 return;
             }
         }
@@ -154,10 +178,12 @@ export default function Home() {
             // バッグを移動した場合、バッグ外に出たアイテムを削除
             return cleanupItemsOutsideBags(newItems);
         });
+        preDragRotationRef.current = null;
+        setDragOverlayItem(null);
     };
 
     return (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-slate-900 text-white">
                 <h1 className="text-3xl font-bold mb-8">Backpack Battles Simulator</h1>
 
@@ -196,6 +222,34 @@ export default function Home() {
                     </div>
                 </div>
             </main>
+
+            {/* ショップからドラッグ中: アイテムを実際のサイズで展開表示 */}
+            <DragOverlay dropAnimation={null}>
+                {dragOverlayItem && (() => {
+                    const cols = dragOverlayItem.shape[0].length;
+                    const rows = dragOverlayItem.shape.length;
+                    const width  = cols * CELL_SIZE + (cols - 1) * GAP_SIZE;
+                    const height = rows * CELL_SIZE + (rows - 1) * GAP_SIZE;
+                    return (
+                        <div style={{
+                            width,
+                            height,
+                            backgroundColor: dragOverlayItem.color,
+                            opacity: 0.85,
+                            borderRadius: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            color: '#fff',
+                            pointerEvents: 'none',
+                        }}>
+                            {dragOverlayItem.name}
+                        </div>
+                    );
+})()}
+            </DragOverlay>
         </DndContext>
     );
 }

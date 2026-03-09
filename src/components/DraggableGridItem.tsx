@@ -8,7 +8,6 @@ interface DraggableGridItemProps {
     placedItem: PlacedItem;
     itemData: ItemData;
     isBag: boolean;              // バッグアイテムかどうか
-    onRotate(instanceId: string): void;
 }
 
 // 6桁HEXカラーを rgba() 文字列に変換する
@@ -20,7 +19,7 @@ function hexToRgba(hex: string, alpha: number): string {
 
 // Gridに置かれたItemをドラッグアンドドロップ可能にする
 export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
-    placedItem, itemData, isBag, onRotate,
+    placedItem, itemData, isBag,
 }) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `grid-item-${placedItem.id}`,
@@ -41,14 +40,6 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
     const top  = placedItem.position.y * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
     const width  = itemCols * CELL_SIZE + (itemCols - 1) * GAP_SIZE;
     const height = itemRows * CELL_SIZE + (itemRows - 1) * GAP_SIZE;
-
-    // 右クリック: ドラッグ中のときだけ回転を許可
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        if (isDragging) {
-            onRotate(placedItem.id);
-        }
-    };
 
     const translateStyle = transform
         ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
@@ -91,7 +82,7 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
             style={style}
             {...listeners}
             {...attributes}
-            onContextMenu={handleContextMenu}
+            onContextMenu={(e) => e.preventDefault()}
             className={
                 isBag
                     ? 'flex items-center justify-center cursor-grab active:cursor-grabbing'

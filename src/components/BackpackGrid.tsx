@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { useDndMonitor } from "@dnd-kit/core";
 import { DroppableCell } from "./DroppableCell";
 import { PlacedItem, ItemData } from '../types';
 import { DraggableGridItem } from "./DraggableGridItem";
@@ -18,6 +21,52 @@ interface BackpackGridProps {
 
 export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedItems, itemsData, litStars, onRotate }) => {
     const cells = Array.from({ length: rows * cols });
+
+    // ドラッグ中のアイテムID と 移動量を追跡
+    const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+    const [dragDelta, setDragDelta] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    useDndMonitor({
+        onDragStart: (event) => {
+            const id = event.active.id.toString();
+            // "grid-item-{placedItemId}" 形式のみ対象
+            if (id.startsWith('grid-item-')) {
+                setDraggingItemId(id.replace('grid-item-', ''));
+            }
+            setDragDelta({ x: 0, y: 0 });
+        },
+        onDragMove: (event) => {
+            setDragDelta({ x: event.delta.x, y: event.delta.y });
+        },
+        onDragEnd: () => { setDraggingItemId(null); setDragDelta({ x: 0, y: 0 }); },
+        onDragCancel: () => { setDraggingItemId(null); setDragDelta({ x: 0, y: 0 }); },
+    });
+
+    // refs: stale closure を避けるためネイティブリスナー内から最新値を参照する
+    const draggingItemIdRef = useRef<string | null>(null);
+    const onRotateRef = useRef(onRotate);
+    useEffect(() => { draggingItemIdRef.current = draggingItemId; }, [draggingItemId]);
+    useEffect(() => { onRotateRef.current = onRotate; });
+
+    // 右クリック回転: DragOverlay 導入後は React 合成イベントに届かないため
+    // document の capture フェーズでネイティブリスナーとして処理する
+    useEffect(() => {
+        const onMouseDown = (e: MouseEvent) => {
+            if (e.button !== 2 || !draggingItemIdRef.current) return;
+            e.preventDefault();
+            onRotateRef.current(draggingItemIdRef.current);
+        };
+        const onContextMenu = (e: MouseEvent) => {
+            // ドラッグ中はブラウザのコンテキストメニューを常に抑制
+            if (draggingItemIdRef.current) e.preventDefault();
+        };
+        document.addEventListener('mousedown', onMouseDown, { capture: true });
+        document.addEventListener('contextmenu', onContextMenu, { capture: true });
+        return () => {
+            document.removeEventListener('mousedown', onMouseDown, { capture: true });
+            document.removeEventListener('contextmenu', onContextMenu, { capture: true });
+        };
+    }, []);
 
     // バッグアイテムが覆っているセルの集合を計算
     const bagCells = getBagCells(placedItems, itemsData);
@@ -59,7 +108,6 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                         placedItem={placed}
                         itemData={itemData}
                         isBag={itemData.tags.includes('bag')}
-                        onRotate={onRotate}
                     />
                 );
             })}
@@ -69,6 +117,10 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                 const itemData = itemsData.find(d => d.id === placed.itemId);
                 if (!itemData?.stars) return [];
 
+                const isDraggingThis = placed.id === draggingItemId;
+                const offsetX = isDraggingThis ? dragDelta.x : 0;
+                const offsetY = isDraggingThis ? dragDelta.y : 0;
+
                 return itemData.stars.map((star, starIndex) => {
                     const absPos = getStarAbsolutePos(
                         star, itemData.shape,
@@ -76,8 +128,8 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                         placed.rotation,
                     );
 
-                    // グリッド範囲外の星は描画しない
-                    if (absPos.x < 0 || absPos.x >= cols || absPos.y < 0 || absPos.y >= rows) {
+                    // ドラッグ中でない場合、グリッド範囲外の星は描画しない
+                    if (!isDraggingThis && (absPos.x < 0 || absPos.x >= cols || absPos.y < 0 || absPos.y >= rows)) {
                         return null;
                     }
 
@@ -89,8 +141,8 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                             key={`star-${placed.id}-${starIndex}`}
                             style={{
                                 position: 'absolute',
-                                left: `${left}px`,
-                                top: `${top}px`,
+                                left: `${left + offsetX}px`,
+                                top: `${top + offsetY}px`,
                                 width: `${CELL_SIZE}px`,
                                 height: `${CELL_SIZE}px`,
                                 display: 'flex',
@@ -98,9 +150,9 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                                 justifyContent: 'center',
                                 fontSize: '14px',
                                 lineHeight: 1,
-                                zIndex: 20,
+                                zIndex: isDraggingThis ? 110 : 20,
                                 pointerEvents: 'none',
-                                filter: isLit ? 'none' : 'grayscale(100%) opacity(35%)',
+                                filter: isLit ? 'none' : 'brightness(0.35) saturate(0.4) opacity(80%)',
                             }}
                         >
                             ⭐

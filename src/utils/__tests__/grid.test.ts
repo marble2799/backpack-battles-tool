@@ -331,7 +331,7 @@ describe('getStarAbsolutePos', () => {
 
     const starNoOverride: StarDefinition = {
         relativePos: { x: 0, y: 1 }, // 中央セル
-        condition: { type: 'adjacent_tag', tag: 'armor' },
+        condition: { type: 'at_position', tag: 'armor' },
     };
     const starWithOverride: StarDefinition = {
         relativePos: { x: 0, y: 0 }, // rotation=0 では上端
@@ -340,7 +340,7 @@ describe('getStarAbsolutePos', () => {
             180: { x: 0, y: 2 }, // rotation=180 では下端
             270: { x: 0, y: 0 }, // rotation=270 では左端
         },
-        condition: { type: 'adjacent_tag', tag: 'weapon' },
+        condition: { type: 'at_position', tag: 'weapon' },
     };
 
     it('オーバーライドなし rotation=0: relativePos をそのまま使う', () => {
@@ -380,12 +380,12 @@ describe('getStarVisualPos', () => {
 
     const starNoOverride: StarDefinition = {
         relativePos: { x: 0, y: 1 },
-        condition: { type: 'adjacent_tag', tag: 'armor' },
+        condition: { type: 'at_position', tag: 'armor' },
     };
     const starWithOverride: StarDefinition = {
         relativePos: { x: 0, y: 0 },
         relativePosOverrides: { 90: { x: 2, y: 0 } },
-        condition: { type: 'adjacent_tag', tag: 'weapon' },
+        condition: { type: 'at_position', tag: 'weapon' },
     };
 
     it('オーバーライドなし rotation=0: relativePos をそのまま返す', () => {
