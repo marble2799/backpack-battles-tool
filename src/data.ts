@@ -32,22 +32,20 @@ export const ITEMS: ItemData[] = [
     // ===== バッグ系 =====
     {
         id: "starter_bag",
-        name: "スターターバッグ",
+        name: "ノーマルバッグ",
         icon: "bag",
         shape: [
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
+            [1, 1],
+            [1, 1],
         ],
         color: "#92400e",
         tags: ["bag"],
     },
     {
         id: "small_bag",
-        name: "小さなバッグ",
+        name: "ウェストポーチ",
         icon: "bag",
         shape: [
-            [1, 1],
             [1, 1],
         ],
         color: "#78350f",
