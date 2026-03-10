@@ -59,23 +59,17 @@ export const ITEMS: ItemData[] = [
         shape: [
             [1],
             [1],
-            [1],
         ],
         color: "#fbbf24",
         tags: ["weapon", "sword"],
         // 属性例: attributes: ["fire"],  ← 炎属性を付与する場合
-        stars: [
-            // 中央セルの右隣 (rotation=0: 右, 90: 下, 180: 左, 270: 上)
-            // 条件: "armor" タグのアイテムが星位置に置かれると光る
-            { relativePos: { x: 1, y: 1 }, condition: { type: "at_position", tag: "armor" } },
-        ],
+        stars: [],
     },
     {
         id: "iron_sword",
         name: "鉄の剣",
         icon: "sword",
         shape: [
-            [1],
             [1],
             [1],
         ],
@@ -107,18 +101,14 @@ export const ITEMS: ItemData[] = [
         ],
         color: "#9ca3af",
         tags: ["armor", "shield"],
-        stars: [
-            // 左上セルの左隣 (rotation=0: 左, 90: 上, 180: 右, 270: 下)
-            // 条件: "weapon" タグのアイテムが星位置に置かれると光る
-            { relativePos: { x: -1, y: 0 }, condition: { type: "at_position", tag: "weapon" } },
-        ],
+        stars: [],
     },
     // ===== 消耗品系 =====
     {
         id: "healing_potion",
         name: "回復ポーション",
         icon: "potion",
-        shape: [[1]],
+        shape: [[1, 1]],
         color: "#ef4444",
         tags: ["consumable", "potion"],
         stars: [
@@ -128,7 +118,7 @@ export const ITEMS: ItemData[] = [
                 relativePos: { x: 0, y: -1 },
                 relativePosOverrides: {
                     90:  { x: 0, y: -1 },
-                    180: { x: 0, y: -1 },
+                    180: { x: 1, y: -1 },
                     270: { x: 0, y: -1 },
                 },
                 condition: { type: "at_position", tag: "potion" },
@@ -137,15 +127,11 @@ export const ITEMS: ItemData[] = [
     },
     {
         id: "herb",
-        name: "薬草",
+        name: "ハーブ",
         icon: "herb",
-        shape: [[1, 1]],
+        shape: [[1]],
         color: "#22c55e",
         tags: ["consumable", "herb"],
-        stars: [
-            // 左端セルの左隣 (rotation=0: 左, 90: 上, 180: 右, 270: 下)
-            // 条件: "potion" タグのアイテムが星位置に置かれると光る
-            { relativePos: { x: -1, y: 0 }, condition: { type: "at_position", tag: "potion" } },
-        ],
+        stars: [],
     },
 ];
