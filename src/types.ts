@@ -29,6 +29,17 @@ export interface StarDefinition {
     condition: StarCondition;
 }
 
+// data.ts での入力用: 同じ condition の星を配列でまとめて指定できる短縮形
+// relativePos に { x: number[], y: number[] } を渡すと、各インデックスが1つの星に展開される
+// 例: { relativePos: { x: [0, 0], y: [-1, 3] }, condition: ... }
+//     → { relativePos: { x: 0, y: -1 }, condition: ... }
+//     → { relativePos: { x: 0, y:  3 }, condition: ... }  の2つに展開
+export type StarDefinitionInput = {
+    relativePos: Point | { x: number[]; y: number[] };
+    relativePosOverrides?: Partial<Record<90 | 180 | 270, Point>>;
+    condition: StarCondition;
+};
+
 // アイテムの構造体
 export interface ItemData {
     id: string;

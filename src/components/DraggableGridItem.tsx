@@ -3,6 +3,7 @@ import React from "react";
 import { useDraggable } from '@dnd-kit/core';
 import { ItemData, PlacedItem } from '../types';
 import { CELL_SIZE, GAP_SIZE, GRID_PADDING } from '../constants';
+import { getOccupiedCells, getShapeCols } from '../utils/grid';
 
 interface DraggableGridItemProps {
     placedItem: PlacedItem;
@@ -30,14 +31,15 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
         },
     });
 
-    // 横向きになっているか判定
+    const { shape } = itemData;
+    const maxCols = getShapeCols(shape);
     const isRotated = placedItem.rotation === 90 || placedItem.rotation === 270;
-    const itemCols = isRotated ? itemData.shape.length : itemData.shape[0].length;
-    const itemRows = isRotated ? itemData.shape[0].length : itemData.shape.length;
+    const itemCols = isRotated ? shape.length : maxCols;
+    const itemRows = isRotated ? maxCols : shape.length;
 
     // 座標・サイズ計算
-    const left = placedItem.position.x * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
-    const top  = placedItem.position.y * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
+    const left   = placedItem.position.x * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
+    const top    = placedItem.position.y * (CELL_SIZE + GAP_SIZE) + GRID_PADDING;
     const width  = itemCols * CELL_SIZE + (itemCols - 1) * GAP_SIZE;
     const height = itemRows * CELL_SIZE + (itemRows - 1) * GAP_SIZE;
 
@@ -46,64 +48,103 @@ export const DraggableGridItem: React.FC<DraggableGridItemProps> = ({
         : undefined;
 
     // バッグ: 半透明塗り + 破線ボーダー、グリッドセルの下に配置
-    // 通常アイテム: アイテムカラーで塗りつぶし
-    const style: React.CSSProperties = isBag
-        ? {
-            position: 'absolute',
-            left: `${left}px`,
-            top: `${top}px`,
-            width: `${width}px`,
-            height: `${height}px`,
-            backgroundColor: hexToRgba(itemData.color, 0.18),
-            border: `2px dashed ${itemData.color}`,
-            borderRadius: '4px',
-            transform: translateStyle,
-            zIndex: isDragging ? 100 : 3,
-            opacity: isDragging ? 0.7 : 1,
-            cursor: 'grab',
-            pointerEvents: 'auto',
-        }
-        : {
-            position: 'absolute',
-            left: `${left}px`,
-            top: `${top}px`,
-            width: `${width}px`,
-            height: `${height}px`,
-            backgroundColor: itemData.color,
-            transform: translateStyle,
-            zIndex: isDragging ? 100 : 10,
-            opacity: isDragging ? 0.8 : 1,
-            cursor: 'grab',
-        };
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...listeners}
-            {...attributes}
-            onContextMenu={(e) => e.preventDefault()}
-            className={
-                isBag
-                    ? 'flex items-center justify-center cursor-grab active:cursor-grabbing'
-                    : 'flex flex-col items-center p-1 bg-slate-800 rounded border border-slate-600 cursor-grab hover:bg-slate-700 active:cursor-grabbing'
-            }
-        >
-            {isBag ? (
+    if (isBag) {
+        return (
+            <div
+                ref={setNodeRef}
+                style={{
+                    position: 'absolute',
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    width: `${width}px`,
+                    height: `${height}px`,
+                    backgroundColor: hexToRgba(itemData.color, 0.18),
+                    border: `2px dashed ${itemData.color}`,
+                    borderRadius: '4px',
+                    transform: translateStyle,
+                    zIndex: isDragging ? 100 : 3,
+                    opacity: isDragging ? 0.7 : 1,
+                    cursor: 'grab',
+                    pointerEvents: 'auto',
+                }}
+                {...listeners}
+                {...attributes}
+                onContextMenu={(e) => e.preventDefault()}
+                className="flex items-center justify-center cursor-grab active:cursor-grabbing"
+            >
                 <span
                     className="text-xs font-semibold select-none"
                     style={{ color: itemData.color, opacity: 0.9, pointerEvents: 'none' }}
                 >
                     {itemData.name}
                 </span>
-            ) : (
-                <div
-                    className="w-full h-full flex items-center justify-center text-xs font-bold"
-                    style={{ color: itemData.color }}
-                >
-                    {itemData.name}
-                </div>
-            )}
+            </div>
+        );
+    }
+
+    // 回転後の視覚セル座標セット（原点基準）
+    const visualCellSet = new Set(
+        getOccupiedCells(shape, 0, 0, placedItem.rotation).map(p => `${p.x},${p.y}`)
+    );
+
+    // 通常アイテム: シェイプに沿った個別セル描画
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                position: 'absolute',
+                left: `${left}px`,
+                top: `${top}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+                transform: translateStyle,
+                zIndex: isDragging ? 100 : 10,
+                opacity: isDragging ? 0.8 : 1,
+                cursor: 'grab',
+            }}
+            {...listeners}
+            {...attributes}
+            onContextMenu={(e) => e.preventDefault()}
+            className="cursor-grab active:cursor-grabbing"
+        >
+            {/* シェイプに沿った個別セル */}
+            {Array.from({ length: itemRows * itemCols }, (_, i) => {
+                const vx = i % itemCols;
+                const vy = Math.floor(i / itemCols);
+                if (!visualCellSet.has(`${vx},${vy}`)) return null;
+                return (
+                    <div
+                        key={i}
+                        style={{
+                            position: 'absolute',
+                            left: vx * (CELL_SIZE + GAP_SIZE),
+                            top: vy * (CELL_SIZE + GAP_SIZE),
+                            width: CELL_SIZE,
+                            height: CELL_SIZE,
+                            backgroundColor: itemData.color,
+                            borderRadius: 2,
+                            border: '1px solid rgba(0,0,0,0.25)',
+                        }}
+                    />
+                );
+            })}
+            {/* アイテム名（バウンディングボックス中央に重ねて表示） */}
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: '#fff',
+                    pointerEvents: 'none',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                }}
+            >
+                {itemData.name}
+            </div>
         </div>
     );
 };
