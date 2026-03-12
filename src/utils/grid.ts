@@ -1,5 +1,10 @@
 import { ItemData, PlacedItem, Point, StarDefinition } from '../types';
 
+// シェイプの最大列数を返す（行によって長さが異なる非矩形シェイプに対応）
+export function getShapeCols(shape: number[][]): number {
+    return Math.max(...shape.map(r => r.length));
+}
+
 // 回転と relativePosOverrides を考慮して、星の絶対グリッド座標を返す
 export function getStarAbsolutePos(
     star: StarDefinition,
@@ -15,7 +20,7 @@ export function getStarAbsolutePos(
     }
     // フォールバック: relativePos を数学的に回転変換して絶対座標を求める
     const rows = shape.length;
-    const cols = shape[0].length;
+    const cols = getShapeCols(shape);
     const r = star.relativePos.y;
     const c = star.relativePos.x;
     let rotX = c;
@@ -36,7 +41,7 @@ export function getStarVisualPos(
         return star.relativePosOverrides[rotation]!;
     }
     const rows = shape.length;
-    const cols = shape[0].length;
+    const cols = getShapeCols(shape);
     const r = star.relativePos.y;
     const c = star.relativePos.x;
     let vx = c;
@@ -58,11 +63,11 @@ export function getOccupiedCells(
     const cells: Point[] = [];
     // アイテムの縦,横の長さ
     const rows = baseShape.length;
-    const cols = baseShape[0].length;
+    const cols = getShapeCols(baseShape);
 
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-            if (baseShape[r][c] === 1) {
+            if ((baseShape[r]?.[c] ?? 0) === 1) {
                 let rotX = c;
                 let rotY = r;
 

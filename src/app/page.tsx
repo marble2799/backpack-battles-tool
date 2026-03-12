@@ -6,7 +6,7 @@ import { BackpackGrid } from "../components/BackpackGrid";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
 import { DraggableShopItem } from "../components/DraggableShopItem";
 import { PlacedItem, ItemData } from '../types';
-import { getOccupiedCells, isOutOfBounds, getOverlappingItems, getBagCells, isOnBagCells, computeLitStars } from "../utils/grid";
+import { getOccupiedCells, isOutOfBounds, getOverlappingItems, getBagCells, isOnBagCells, computeLitStars, getShapeCols } from "../utils/grid";
 import { GRID_COLS, GRID_ROWS, CELL_SIZE, GAP_SIZE } from "../constants";
 
 // 初期配置: スターターバッグをグリッド中央付近に置く
@@ -226,29 +226,51 @@ export default function Home() {
             {/* ショップからドラッグ中: アイテムを実際のサイズで展開表示 */}
             <DragOverlay dropAnimation={null}>
                 {dragOverlayItem && (() => {
-                    const cols = dragOverlayItem.shape[0].length;
+                    const cols = getShapeCols(dragOverlayItem.shape);
                     const rows = dragOverlayItem.shape.length;
                     const width  = cols * CELL_SIZE + (cols - 1) * GAP_SIZE;
                     const height = rows * CELL_SIZE + (rows - 1) * GAP_SIZE;
+                    const visualCellSet = new Set(
+                        getOccupiedCells(dragOverlayItem.shape, 0, 0, 0).map(p => `${p.x},${p.y}`)
+                    );
                     return (
-                        <div style={{
-                            width,
-                            height,
-                            backgroundColor: dragOverlayItem.color,
-                            opacity: 0.85,
-                            borderRadius: 4,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            color: '#fff',
-                            pointerEvents: 'none',
-                        }}>
-                            {dragOverlayItem.name}
+                        <div style={{ width, height, position: 'relative', pointerEvents: 'none' }}>
+                            {Array.from({ length: rows * cols }, (_, i) => {
+                                const vx = i % cols;
+                                const vy = Math.floor(i / cols);
+                                if (!visualCellSet.has(`${vx},${vy}`)) return null;
+                                return (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            position: 'absolute',
+                                            left: vx * (CELL_SIZE + GAP_SIZE),
+                                            top: vy * (CELL_SIZE + GAP_SIZE),
+                                            width: CELL_SIZE,
+                                            height: CELL_SIZE,
+                                            backgroundColor: dragOverlayItem.color,
+                                            opacity: 0.85,
+                                            borderRadius: 4,
+                                        }}
+                                    />
+                                );
+                            })}
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                color: '#fff',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                            }}>
+                                {dragOverlayItem.name}
+                            </div>
                         </div>
                     );
-})()}
+                })()}
             </DragOverlay>
         </DndContext>
     );
