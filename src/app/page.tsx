@@ -233,13 +233,13 @@ export default function Home() {
 
     return (
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-slate-900 text-white">
-                <h1 className="text-3xl font-bold mb-8">Backpack Battles Simulator</h1>
+            <main style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px' }}>
+                <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '32px' }}>Backpack Battles Simulator</h1>
 
-                <div className="flex flex-row gap-12 items-start">
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '48px', alignItems: 'flex-start', width: '100%', maxWidth: '1400px' }}>
                     {/* 左側にバックパックエリアを設定 */}
-                    <div className="flex flex-col items-center gap-4">
-                        <h2 className="text-xl font-semibold">BackPack Area</h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>BackPack Area</h2>
                         <BackpackGrid
                             rows={GRID_ROWS}
                             cols={GRID_COLS}
@@ -252,19 +252,21 @@ export default function Home() {
                         {/* リセットボタン */}
                         <button
                             onClick={handleReset}
-                            className="mt-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
+                            style={{ marginTop: '8px', padding: '8px 16px', backgroundColor: '#b91c1c', color: '#fff', borderRadius: '6px', fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer', border: 'none' }}
+                            onMouseOver={e => (e.currentTarget.style.backgroundColor = '#dc2626')}
+                            onMouseOut={e => (e.currentTarget.style.backgroundColor = '#b91c1c')}
                         >
                             リセット（バッグ以外を削除）
                         </button>
-                        <p className="text-xs text-slate-400">
+                        <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                             右クリック: アイテムを回転 | 暗いマス: バッグ未配置（アイテム不可）
                         </p>
                     </div>
 
                     {/* 右側にはアイテムリストを表示 */}
-                    <div className="flex flex-col items-center gap-4">
-                        <h2 className="text-xl font-semibold">Item List</h2>
-                        <div className="flex flex-wrap gap-4 max-w-md">
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '16px', flex: 1 }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Item List</h2>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                             {ITEMS.map((item) => (
                                 <DraggableShopItem key={item.id} item={item} />
                             ))}

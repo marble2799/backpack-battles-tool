@@ -95,8 +95,11 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
 
     return (
         <div
-            className="relative bg-slate-800 rounded-lg border-2 border-slate-600"
             style={{
+                position: 'relative',
+                backgroundColor: '#1e293b',
+                borderRadius: '8px',
+                border: '2px solid #475569',
                 width: cols * CELL_SIZE + (cols - 1) * GAP_SIZE + GRID_PADDING * 2,
                 height: rows * CELL_SIZE + (rows - 1) * GAP_SIZE + GRID_PADDING * 2,
                 padding: GRID_PADDING,
@@ -104,6 +107,7 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                 gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)`,
                 gridTemplateRows: `repeat(${rows}, ${CELL_SIZE}px)`,
                 gap: `${GAP_SIZE}px`,
+                boxSizing: 'content-box',
             }}
         >
             {/* マス目の描画 */}
