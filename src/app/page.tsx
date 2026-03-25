@@ -1,6 +1,6 @@
 "use client"; // Next.jsでHookを使うためのおまじない
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { ITEMS } from "../data";
 import { BackpackGrid } from "../components/BackpackGrid";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
@@ -23,13 +23,21 @@ export default function Home() {
     const [placedItems, setPlacedItems] = useState<PlacedItem[]>(INITIAL_PLACED_ITEMS);
     // ショップからドラッグ中のアイテム（DragOverlay で展開表示するため）
     const [dragOverlayItem, setDragOverlayItem] = useState<ItemData | null>(null);
+    // ショップからドラッグ中のアイテムの回転角度
+    const [shopDragRotation, setShopDragRotation] = useState<0 | 90 | 180 | 270>(0);
     // ドラッグ開始時の回転を保存（バッグ判定失敗時に復元するため）
     const preDragRotationRef = useRef<{ id: string; rotation: 0 | 90 | 180 | 270 } | null>(null);
+
+    // ショップからドラッグ中のアイテムを回転させる
+    const handleShopRotate = () => {
+        setShopDragRotation(prev => (prev + 90) % 360 as 0 | 90 | 180 | 270);
+    };
 
     const handleDragStart = (event: DragStartEvent) => {
         const data = event.active.data.current;
         if (data?.type === 'shop') {
             setDragOverlayItem(data.item as ItemData);
+            setShopDragRotation(0); // ショップドラッグ開始時は回転をリセット
         } else if (data?.type === 'grid') {
             const existing = placedItems.find(p => p.id === data.id);
             if (existing) {
@@ -51,6 +59,45 @@ export default function Home() {
             return item;
         }));
     };
+
+    // 矢印キーで全アイテムを1マス移動する
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            let dx = 0, dy = 0;
+            if (e.key === 'ArrowLeft')       { dx = -1; }
+            else if (e.key === 'ArrowRight') { dx =  1; }
+            else if (e.key === 'ArrowUp')    { dy = -1; }
+            else if (e.key === 'ArrowDown')  { dy =  1; }
+            else return;
+
+            e.preventDefault();
+
+            setPlacedItems(prev => {
+                // 全アイテムが移動後もグリッド内に収まるかチェック
+                for (const placedItem of prev) {
+                    const itemData = ITEMS.find(d => d.id === placedItem.itemId);
+                    if (!itemData) return prev;
+                    const newCells = getOccupiedCells(
+                        itemData.shape,
+                        placedItem.position.x + dx,
+                        placedItem.position.y + dy,
+                        placedItem.rotation,
+                    );
+                    if (isOutOfBounds(newCells, GRID_COLS, GRID_ROWS)) {
+                        return prev; // 1つでも範囲外になるなら移動しない
+                    }
+                }
+                // 全アイテムを移動
+                return prev.map(p => ({
+                    ...p,
+                    position: { x: p.position.x + dx, y: p.position.y + dy },
+                }));
+            });
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // バッグ以外のアイテムをすべて削除する
     const handleReset = () => {
@@ -102,11 +149,13 @@ export default function Home() {
             : ITEMS.find(d => d.id === activeData.item.id);
         if (!item) return;
 
-        // グリッド上のアイテムなら現在の回転角度を、ショップなら0度を取得
+        // グリッド上のアイテムなら現在の回転角度を、ショップならドラッグ中の回転角度を取得
         let currentRotation: 0 | 90 | 180 | 270 = 0;
         if (activeData.type === 'grid') {
             const existingItem = placedItems.find(p => p.id === activeData.id);
             if (existingItem) currentRotation = existingItem.rotation;
+        } else if (activeData.type === 'shop') {
+            currentRotation = shopDragRotation;
         }
 
         const newCells = getOccupiedCells(item.shape, x, y, currentRotation);
@@ -166,7 +215,7 @@ export default function Home() {
                     id: `${item.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     itemId: item.id,
                     position: { x, y },
-                    rotation: 0,
+                    rotation: shopDragRotation,
                 };
                 newItems = [...filtered, newItem];
             } else {
@@ -198,6 +247,7 @@ export default function Home() {
                             itemsData={ITEMS}
                             litStars={litStars}
                             onRotate={handleRotate}
+                            onShopRotate={handleShopRotate}
                         />
                         {/* リセットボタン */}
                         <button
@@ -223,21 +273,24 @@ export default function Home() {
                 </div>
             </main>
 
-            {/* ショップからドラッグ中: アイテムを実際のサイズで展開表示 */}
+            {/* ショップからドラッグ中: アイテムを実際のサイズで展開表示 (shopDragRotation で回転) */}
             <DragOverlay dropAnimation={null}>
                 {dragOverlayItem && (() => {
-                    const cols = getShapeCols(dragOverlayItem.shape);
-                    const rows = dragOverlayItem.shape.length;
-                    const width  = cols * CELL_SIZE + (cols - 1) * GAP_SIZE;
-                    const height = rows * CELL_SIZE + (rows - 1) * GAP_SIZE;
+                    const baseCols = getShapeCols(dragOverlayItem.shape);
+                    const baseRows = dragOverlayItem.shape.length;
+                    // 90°/270° 回転時は縦横が入れ替わる
+                    const rotCols = (shopDragRotation === 90 || shopDragRotation === 270) ? baseRows : baseCols;
+                    const rotRows = (shopDragRotation === 90 || shopDragRotation === 270) ? baseCols : baseRows;
+                    const width  = rotCols * CELL_SIZE + (rotCols - 1) * GAP_SIZE;
+                    const height = rotRows * CELL_SIZE + (rotRows - 1) * GAP_SIZE;
                     const visualCellSet = new Set(
-                        getOccupiedCells(dragOverlayItem.shape, 0, 0, 0).map(p => `${p.x},${p.y}`)
+                        getOccupiedCells(dragOverlayItem.shape, 0, 0, shopDragRotation).map(p => `${p.x},${p.y}`)
                     );
                     return (
                         <div style={{ width, height, position: 'relative', pointerEvents: 'none' }}>
-                            {Array.from({ length: rows * cols }, (_, i) => {
-                                const vx = i % cols;
-                                const vy = Math.floor(i / cols);
+                            {Array.from({ length: rotRows * rotCols }, (_, i) => {
+                                const vx = i % rotCols;
+                                const vy = Math.floor(i / rotCols);
                                 if (!visualCellSet.has(`${vx},${vy}`)) return null;
                                 return (
                                     <div
