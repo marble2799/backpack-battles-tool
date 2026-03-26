@@ -17,13 +17,15 @@ interface BackpackGridProps {
 
     // Method
     onRotate(instanceId: string): void;
+    onShopRotate?: () => void;  // ショップアイテムのドラッグ中に右クリックで呼ばれる
 }
 
-export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedItems, itemsData, litStars, onRotate }) => {
+export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedItems, itemsData, litStars, onRotate, onShopRotate }) => {
     const cells = Array.from({ length: rows * cols });
 
     // ドラッグ中のアイテムID と 移動量を追跡
     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+    const [isShopDragging, setIsShopDragging] = useState(false);
     const [dragDelta, setDragDelta] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
     useDndMonitor({
@@ -33,32 +35,46 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
             if (id.startsWith('grid-item-')) {
                 setDraggingItemId(id.replace('grid-item-', ''));
             }
+            // ショップアイテムのドラッグ開始を検知
+            if (id.startsWith('shop-')) {
+                setIsShopDragging(true);
+            }
             setDragDelta({ x: 0, y: 0 });
         },
         onDragMove: (event) => {
             setDragDelta({ x: event.delta.x, y: event.delta.y });
         },
-        onDragEnd: () => { setDraggingItemId(null); setDragDelta({ x: 0, y: 0 }); },
-        onDragCancel: () => { setDraggingItemId(null); setDragDelta({ x: 0, y: 0 }); },
+        onDragEnd: () => { setDraggingItemId(null); setIsShopDragging(false); setDragDelta({ x: 0, y: 0 }); },
+        onDragCancel: () => { setDraggingItemId(null); setIsShopDragging(false); setDragDelta({ x: 0, y: 0 }); },
     });
 
     // refs: stale closure を避けるためネイティブリスナー内から最新値を参照する
     const draggingItemIdRef = useRef<string | null>(null);
+    const isShopDraggingRef = useRef(false);
     const onRotateRef = useRef(onRotate);
+    const onShopRotateRef = useRef(onShopRotate);
     useEffect(() => { draggingItemIdRef.current = draggingItemId; }, [draggingItemId]);
+    useEffect(() => { isShopDraggingRef.current = isShopDragging; }, [isShopDragging]);
     useEffect(() => { onRotateRef.current = onRotate; });
+    useEffect(() => { onShopRotateRef.current = onShopRotate; });
 
     // 右クリック回転: DragOverlay 導入後は React 合成イベントに届かないため
     // document の capture フェーズでネイティブリスナーとして処理する
     useEffect(() => {
         const onMouseDown = (e: MouseEvent) => {
-            if (e.button !== 2 || !draggingItemIdRef.current) return;
+            if (e.button !== 2) return;
             e.preventDefault();
-            onRotateRef.current(draggingItemIdRef.current);
+            if (draggingItemIdRef.current) {
+                // グリッド上のアイテムをドラッグ中の場合
+                onRotateRef.current(draggingItemIdRef.current);
+            } else if (isShopDraggingRef.current) {
+                // ショップからのドラッグ中の場合
+                onShopRotateRef.current?.();
+            }
         };
         const onContextMenu = (e: MouseEvent) => {
             // ドラッグ中はブラウザのコンテキストメニューを常に抑制
-            if (draggingItemIdRef.current) e.preventDefault();
+            if (draggingItemIdRef.current || isShopDraggingRef.current) e.preventDefault();
         };
         document.addEventListener('mousedown', onMouseDown, { capture: true });
         document.addEventListener('contextmenu', onContextMenu, { capture: true });
@@ -79,8 +95,11 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
 
     return (
         <div
-            className="relative bg-slate-800 rounded-lg border-2 border-slate-600"
             style={{
+                position: 'relative',
+                backgroundColor: '#1e293b',
+                borderRadius: '8px',
+                border: '2px solid #475569',
                 width: cols * CELL_SIZE + (cols - 1) * GAP_SIZE + GRID_PADDING * 2,
                 height: rows * CELL_SIZE + (rows - 1) * GAP_SIZE + GRID_PADDING * 2,
                 padding: GRID_PADDING,
@@ -88,6 +107,7 @@ export const BackpackGrid: React.FC<BackpackGridProps> = ({ rows, cols, placedIt
                 gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)`,
                 gridTemplateRows: `repeat(${rows}, ${CELL_SIZE}px)`,
                 gap: `${GAP_SIZE}px`,
+                boxSizing: 'content-box',
             }}
         >
             {/* マス目の描画 */}

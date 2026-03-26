@@ -1,8 +1,12 @@
 // ドラッグ可能なアイテムの定義
 import React from "react";
-import {useDraggable} from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 import { ItemData } from "../types";
+import { getOccupiedCells, getShapeCols } from "../utils/grid";
 
+// ショップのアイテムプレビュー用のセルサイズ
+const PREVIEW_CELL = 18;
+const PREVIEW_GAP = 2;
 
 interface DraggableShopItemProps {
     item: ItemData;
@@ -19,22 +23,63 @@ export const DraggableShopItem: React.FC<DraggableShopItemProps> = ({ item }) =>
         },
     });
 
+    const cols = getShapeCols(item.shape);
+    const rows = item.shape.length;
+    const previewWidth  = cols * PREVIEW_CELL + (cols - 1) * PREVIEW_GAP;
+    const previewHeight = rows * PREVIEW_CELL + (rows - 1) * PREVIEW_GAP;
+
+    // 占有セルの集合（視覚座標）
+    const occupiedSet = new Set(
+        getOccupiedCells(item.shape, 0, 0, 0).map(p => `${p.x},${p.y}`)
+    );
+
     // ドラッグ中は元の位置にゴースト表示（DragOverlay が実際の移動を担う）
     return (
         <div
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            style={{ opacity: isDragging ? 0.3 : 1 }}
-            className="flex flex-col items-center p-2 bg-slate-800 rounded border border-slate-600 cursor-grab hover:bg-slate-700 active:cursor-grabbing z-50"
+            style={{
+                opacity: isDragging ? 0.3 : 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '8px',
+                backgroundColor: '#1e293b',
+                border: '1px solid #475569',
+                borderRadius: '6px',
+                cursor: 'grab',
+                userSelect: 'none',
+                gap: '6px',
+            }}
         >
-            <div
-                className="w-12 h-12 flex items-center justify-center text-2xl"
-                style={{ color: item.color }}
-            >
-                {item.shape.length}x{item.shape[0].length}
+            {/* アイテム形状プレビュー */}
+            <div style={{ position: 'relative', width: previewWidth, height: previewHeight }}>
+                {Array.from({ length: rows * cols }, (_, i) => {
+                    const vx = i % cols;
+                    const vy = Math.floor(i / cols);
+                    if (!occupiedSet.has(`${vx},${vy}`)) return null;
+                    return (
+                        <div
+                            key={i}
+                            style={{
+                                position: 'absolute',
+                                left: vx * (PREVIEW_CELL + PREVIEW_GAP),
+                                top:  vy * (PREVIEW_CELL + PREVIEW_GAP),
+                                width: PREVIEW_CELL,
+                                height: PREVIEW_CELL,
+                                backgroundColor: item.color,
+                                borderRadius: 2,
+                                border: '1px solid rgba(0,0,0,0.3)',
+                            }}
+                        />
+                    );
+                })}
             </div>
-            <span className="text-sm mt-1">{item.name}</span>
+            {/* アイテム名 */}
+            <span style={{ fontSize: '0.75rem', color: '#e2e8f0', textAlign: 'center', lineHeight: 1.2 }}>
+                {item.name}
+            </span>
         </div>
     );
 };

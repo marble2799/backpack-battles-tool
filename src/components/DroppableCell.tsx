@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { CELL_SIZE } from '../constants';
 
 interface DroppableCellProps {
     x: number;
@@ -13,16 +14,28 @@ export const DroppableCell: React.FC<DroppableCellProps> = ({ x, y, isBagCell })
         data: { x, y }, // ドロップ時に取り出す座標データ
     });
 
+    let backgroundColor: string;
+    let borderColor: string;
+    if (isBagCell) {
+        backgroundColor = isOver ? '#64748b' : '#334155';
+        borderColor = isOver ? '#94a3b8' : '#475569';
+    } else {
+        backgroundColor = '#020617';
+        borderColor = '#1e293b';
+    }
+
     return (
         <div
             ref={setNodeRef}
-            className={`w-10 h-10 border rounded-sm transition-colors ${
-                isBagCell
-                    ? isOver
-                        ? 'bg-slate-500 border-slate-400'
-                        : 'bg-slate-700 border-slate-600'
-                    : 'bg-slate-950 border-slate-800'
-            }`}
+            style={{
+                width: CELL_SIZE,
+                height: CELL_SIZE,
+                backgroundColor,
+                border: `1px solid ${borderColor}`,
+                borderRadius: '2px',
+                transition: 'background-color 0.1s',
+                boxSizing: 'border-box',
+            }}
         />
     );
 };
