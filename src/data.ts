@@ -53,7 +53,7 @@ const scop = "scop";
 // ==== 属性名 ====
 const nature = "nature";
 
-export const ITEMS: ItemData[] = [
+export const HARDCODED_ITEMS: ItemData[] = [
   // ===== バッグ系 =====
   {
     id: "starter_bag",
@@ -229,5 +229,13 @@ export const ITEMS: ItemData[] = [
     tags: [no_cooltime],
     stars: [],
   },
-  ...(editorItemsRaw as ItemData[]),
+];
+
+const _editorItems = editorItemsRaw as ItemData[];
+const _editorIds = new Set(_editorItems.map((i) => i.id));
+
+// エディタアイテムが同IDの既存アイテムを上書きする
+export const ITEMS: ItemData[] = [
+  ...HARDCODED_ITEMS.filter((i) => !_editorIds.has(i.id)),
+  ..._editorItems,
 ];
