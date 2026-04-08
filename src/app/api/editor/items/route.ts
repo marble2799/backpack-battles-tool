@@ -58,6 +58,42 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(newItem, { status: 201 });
 }
 
+export async function PUT(req: NextRequest) {
+  const body = await req.json();
+
+  if (!body.id || !body.name || !body.shape) {
+    return NextResponse.json(
+      { error: "id, name, shape は必須です" },
+      { status: 400 }
+    );
+  }
+
+  const items = readItems();
+  const idx = items.findIndex((item) => item.id === body.id);
+
+  if (idx === -1) {
+    return NextResponse.json(
+      { error: `id "${body.id}" が見つかりません` },
+      { status: 404 }
+    );
+  }
+
+  const updated: ItemData = {
+    id: body.id,
+    name: body.name,
+    shape: body.shape,
+    color: body.color ?? "#6b7280",
+    tags: body.tags ?? [],
+    attributes: body.attributes,
+    stars: body.stars ?? [],
+  };
+
+  items[idx] = updated;
+  writeItems(items);
+
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
