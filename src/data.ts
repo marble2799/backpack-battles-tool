@@ -1,4 +1,5 @@
 import { ItemData, StarDefinition, StarDefinitionInput } from "./types";
+import editorItemsRaw from "./data/editor-items.json";
 
 // 配列記法の StarDefinitionInput を StarDefinition[] に展開するヘルパー
 function expandStars(inputs: StarDefinitionInput[]): StarDefinition[] {
@@ -47,16 +48,16 @@ const potion = "potion";
 const food = "food";
 const bag = "bag";
 const empty = "empty";
+const scop = "scop";
 
 // ==== 属性名 ====
 const nature = "nature";
 
-export const ITEMS: ItemData[] = [
+export const HARDCODED_ITEMS: ItemData[] = [
   // ===== バッグ系 =====
   {
     id: "starter_bag",
     name: "ノーマルバッグ",
-    icon: "bag",
     shape: [
       [1, 1],
       [1, 1],
@@ -67,18 +68,16 @@ export const ITEMS: ItemData[] = [
   {
     id: "small_bag",
     name: "ウェストポーチ",
-    icon: "bag",
     shape: [
       [1, 1],
     ],
     color: "#78350f",
     tags: [bag],
   },
-  // ===== 武器系 =====
+  // ===== 共通アイテム =====
   {
     id: "wooden_sword",
     name: "木の剣",
-    icon: "sword",
     shape: [
       [1],
       [1],
@@ -91,7 +90,6 @@ export const ITEMS: ItemData[] = [
   {
     id: "pan",
     name: "フライパン",
-    icon: "pan",
     shape: [
       [1],
       [1, 1],
@@ -108,7 +106,6 @@ export const ITEMS: ItemData[] = [
   {
     id: "broom",
     name: "ほうき",
-    icon: "broom",
     shape: [
       [1],
       [1],
@@ -122,11 +119,10 @@ export const ITEMS: ItemData[] = [
   {
     id: "hammer",
     name: "ハンマー",
-    icon: "hammer",
     shape: [
       [1, 1, 1],
-      [1],
-      [1],
+      [0, 1, 0],
+      [0, 1, 0],
     ],
     color: "#c9caca",
     tags: [weapon],
@@ -135,7 +131,6 @@ export const ITEMS: ItemData[] = [
   {
     id: "spear",
     name: "スピア",
-    icon: "spear",
     shape: [
       [1],
       [1],
@@ -154,7 +149,6 @@ export const ITEMS: ItemData[] = [
   {
     id: "dagger",
     name: "ダガー",
-    icon: "dagger",
     shape: [
       [1],
       [1],
@@ -164,9 +158,21 @@ export const ITEMS: ItemData[] = [
     stars: [],
   },
   {
+    id: "scop",
+    name: "スコップ",
+    shape: [
+      [1],
+      [1],
+      [1],
+      [1]
+    ],
+    color: "#6b7280",
+    tags: [weapon, scop],
+    stars: [],
+  },
+  {
     id: "iron_sword",
     name: "鉄の剣(仮)",
-    icon: "sword",
     shape: [
       [1],
       [1],
@@ -186,7 +192,6 @@ export const ITEMS: ItemData[] = [
   {
     id: "wooden_shield",
     name: "木の盾",
-    icon: "shield",
     shape: [
       [1, 1],
       [1, 1],
@@ -199,7 +204,6 @@ export const ITEMS: ItemData[] = [
   {
     id: "healing_potion",
     name: "回復ポーション",
-    icon: "potion",
     shape: [[1, 1]],
     color: "#ef4444",
     tags: [no_cooltime, potion],
@@ -220,10 +224,18 @@ export const ITEMS: ItemData[] = [
   {
     id: "herb",
     name: "ハーブ",
-    icon: "herb",
     shape: [[1]],
     color: "#22c55e",
     tags: [no_cooltime],
     stars: [],
   },
+];
+
+const _editorItems = editorItemsRaw as ItemData[];
+const _editorIds = new Set(_editorItems.map((i) => i.id));
+
+// エディタアイテムが同IDの既存アイテムを上書きする
+export const ITEMS: ItemData[] = [
+  ...HARDCODED_ITEMS.filter((i) => !_editorIds.has(i.id)),
+  ..._editorItems,
 ];

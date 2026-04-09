@@ -1,0 +1,78 @@
+[
+  {
+    "id": "torch",
+    "name": "たいまつ",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#7a6b80",
+    "tags": [],
+    "stars": []
+  },
+  {
+    "id": "whip",
+    "name": "イバラのムチ",
+    "shape": [
+      [
+        1,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        1
+      ]
+    ],
+    "color": "#44ab4b",
+    "tags": [],
+    "stars": []
+  },
+  {
+    "id": "blood_sword",
+    "name": "飢えたる剣",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#b91d34",
+    "tags": [
+      "weapon"
+    ],
+    "stars": []
+  },
+  {
+    "id": "poison_dager",
+    "name": "ポイズンダガー",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#4b8344",
+    "tags": [
+      "weapon"
+    ],
+    "stars": []
+  }
+]
