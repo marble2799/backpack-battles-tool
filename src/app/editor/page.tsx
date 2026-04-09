@@ -360,7 +360,7 @@ function Editor() {
 
       {/* ---- アイテム編集タブ ---- */}
       {activeTab === "editor" && (
-        <div className="p-4 flex gap-8 flex-wrap">
+        <div className="p-4 flex gap-8 flex-wrap justify-center items-start">
 
           {/* === 左パネル: フォーム === */}
           <div className="flex flex-col gap-3 w-64 flex-shrink-0">
@@ -548,11 +548,11 @@ function Editor() {
           </div>
 
           {/* === 右パネル: アイテム一覧 === */}
-          <div className="flex flex-col gap-2 w-56 flex-shrink-0">
+          <div className="flex flex-col gap-2 w-72 flex-shrink-0 ml-8">
             <p className="font-semibold text-slate-300">
               アイテム一覧 ({allItems.length}件)
             </p>
-            <p className="text-xs text-slate-500 -mt-1">クリックして編集</p>
+            <p className="text-xs text-slate-500 -mt-1">クリックして編集 / 再クリックでキャンセル</p>
             {allItems.length === 0 ? (
               <p className="text-slate-500 text-xs">読み込み中...</p>
             ) : (
@@ -562,7 +562,7 @@ function Editor() {
                   const isEditorItem = editorItemIds.has(item.id);
                   return (
                     <div key={item.id}
-                      onClick={() => loadItem(item)}
+                      onClick={() => isEditing ? handleClear() : loadItem(item)}
                       className={`bg-slate-800 rounded-lg p-2.5 flex flex-col gap-1.5 cursor-pointer transition-all ${
                         isEditing ? "ring-2 ring-blue-500" : "hover:bg-slate-700"
                       }`}>
