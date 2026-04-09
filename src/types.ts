@@ -44,7 +44,6 @@ export type StarDefinitionInput = {
 export interface ItemData {
     id: string;
     name: string;
-    icon: string;
     shape: number[][];
     color: string;
     // カテゴリ/種類: weapon, sword, armor, shield, potion, herb, consumable, bag など

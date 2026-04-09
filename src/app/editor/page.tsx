@@ -360,7 +360,7 @@ function Editor() {
 
       {/* ---- アイテム編集タブ ---- */}
       {activeTab === "editor" && (
-        <div className="p-4 flex gap-8 flex-wrap justify-center items-start">
+        <div className="p-4 flex items-start">
 
           {/* === 左パネル: フォーム === */}
           <div className="flex flex-col gap-3 w-64 flex-shrink-0">
@@ -456,7 +456,7 @@ function Editor() {
           </div>
 
           {/* === 中央: グリッド === */}
-          <div className="flex flex-col gap-3 flex-shrink-0">
+          <div className="flex flex-col gap-3 flex-shrink-0 flex-1 items-center justify-center px-4">
             {/* モード切替 */}
             <div className="flex gap-2 items-center">
               <div className="flex rounded overflow-hidden border border-slate-600">
@@ -548,7 +548,7 @@ function Editor() {
           </div>
 
           {/* === 右パネル: アイテム一覧 === */}
-          <div className="flex flex-col gap-2 w-72 flex-shrink-0 ml-8">
+          <div className="flex flex-col gap-2 w-72 flex-shrink-0">
             <p className="font-semibold text-slate-300">
               アイテム一覧 ({allItems.length}件)
             </p>
@@ -556,15 +556,15 @@ function Editor() {
             {allItems.length === 0 ? (
               <p className="text-slate-500 text-xs">読み込み中...</p>
             ) : (
-              <div className="flex flex-col gap-1.5 max-h-[80vh] overflow-y-auto pr-1">
+              <div className="flex flex-col max-h-[80vh] overflow-y-auto bg-slate-800 rounded-lg divide-y divide-slate-700">
                 {allItems.map(item => {
                   const isEditing = editingId === item.id;
                   const isEditorItem = editorItemIds.has(item.id);
                   return (
                     <div key={item.id}
                       onClick={() => isEditing ? handleClear() : loadItem(item)}
-                      className={`bg-slate-800 rounded-lg p-2.5 flex flex-col gap-1.5 cursor-pointer transition-all ${
-                        isEditing ? "ring-2 ring-blue-500" : "hover:bg-slate-700"
+                      className={`p-2.5 flex flex-col gap-1.5 cursor-pointer transition-all first:rounded-t-lg last:rounded-b-lg ${
+                        isEditing ? "bg-blue-900/30" : "hover:bg-slate-700"
                       }`}>
                       <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -572,19 +572,16 @@ function Editor() {
                           <span className="font-medium text-xs truncate">{item.name}</span>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className={`text-xs px-1 rounded ${
+                            isEditorItem ? "bg-blue-900 text-blue-300" : "bg-slate-700 text-slate-400"
+                          }`}>
+                            {isEditorItem ? "エディタ" : "既存"}
+                          </span>
                           {isEditorItem && (
                             <button onClick={e => { e.stopPropagation(); handleDelete(item.id); }}
                               className="text-red-400 hover:text-red-300 text-xs">✕</button>
                           )}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <p className="text-xs text-slate-500 font-mono truncate flex-1">{item.id}</p>
-                        <span className={`text-xs px-1 rounded flex-shrink-0 ${
-                          isEditorItem ? "bg-blue-900 text-blue-300" : "bg-slate-700 text-slate-400"
-                        }`}>
-                          {isEditorItem ? "エディタ" : "既存"}
-                        </span>
                       </div>
                       {/* ミニプレビュー */}
                       <div style={{
@@ -602,13 +599,6 @@ function Editor() {
                           ))
                         )}
                       </div>
-                      {item.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-0.5">
-                          {item.tags.map(t => (
-                            <span key={t} className="text-xs bg-slate-700 rounded px-1 text-slate-400">{t}</span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
