@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { ItemData, StarDefinition } from "@/src/types";
+import { ItemData, StarCondition, StarDefinition } from "@/src/types";
 
 // ------------------------------------------------------------------ constants
 const EDITOR_ROWS = 7;
@@ -52,17 +52,18 @@ function computeShape(itemCells: Set<CellKey>): number[][] {
 function computeStarsFromRotations(
   itemCells: Set<CellKey>,
   starCellsByRotation: StarCellsByRotation,
-  conditionTag: string,
+  starConditions: Map<CellKey, string[]>,
 ): StarDefinition[] {
   const itemCoords = Array.from(itemCells).map(parseKey);
   const minRow = itemCoords.length > 0 ? Math.min(...itemCoords.map(c => c.row)) : 0;
   const minCol = itemCoords.length > 0 ? Math.min(...itemCoords.map(c => c.col)) : 0;
   const toRel = (key: CellKey) => { const { row, col } = parseKey(key); return { x: col - minCol, y: row - minRow }; };
-  const cond = { type: "at_position" as const, ...(conditionTag ? { tag: conditionTag } : {}) };
 
-  const stars: StarDefinition[] = Array.from(starCellsByRotation[0]).map(key => ({
-    relativePos: toRel(key), condition: cond,
-  }));
+  const stars: StarDefinition[] = Array.from(starCellsByRotation[0]).map(key => {
+    const tags = starConditions.get(key) ?? [];
+    const cond: StarCondition = tags.length > 0 ? { tags } : {};
+    return { relativePos: toRel(key), condition: cond };
+  });
 
   for (const rot of [90, 180, 270] as (90 | 180 | 270)[]) {
     const cells = starCellsByRotation[rot];
@@ -74,7 +75,7 @@ function computeStarsFromRotations(
         stars.push({
           relativePos: pos,
           relativePosOverrides: { [rot]: pos } as Partial<Record<90 | 180 | 270, { x: number; y: number }>>,
-          condition: cond,
+          condition: {},
         });
       }
     });
@@ -82,10 +83,69 @@ function computeStarsFromRotations(
   return stars;
 }
 
-function shapeToItemCells(shape: number[][]): Set<CellKey> {
+// starRotation に合わせてアイテムセルを同じ左上アンカーで回転した表示用セットを返す
+function getRotatedItemCells(itemCells: Set<CellKey>, rotation: Rotation): Set<CellKey> {
+  if (rotation === 0 || itemCells.size === 0) return itemCells;
+  const coords = Array.from(itemCells).map(parseKey);
+  const minRow = Math.min(...coords.map(c => c.row));
+  const minCol = Math.min(...coords.map(c => c.col));
+  const shape = computeShape(itemCells);
+  const rows = shape.length;
+  const cols = shape[0]?.length ?? 1;
+  const result = new Set<CellKey>();
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if ((shape[r]?.[c] ?? 0) === 1) {
+        let rotX = c, rotY = r;
+        if      (rotation === 90)  { rotX = rows - 1 - r; rotY = c; }
+        else if (rotation === 180) { rotX = cols - 1 - c; rotY = rows - 1 - r; }
+        else if (rotation === 270) { rotX = r;             rotY = cols - 1 - c; }
+        result.add(cellKey(minRow + rotY, minCol + rotX));
+      }
+    }
+  }
+  return result;
+}
+
+function shapeToItemCells(shape: number[][], rowOffset = 0, colOffset = 0): Set<CellKey> {
   const cells = new Set<CellKey>();
-  shape.forEach((row, r) => row.forEach((v, c) => { if (v === 1) cells.add(cellKey(r, c)); }));
+  shape.forEach((row, r) => row.forEach((v, c) => { if (v === 1) cells.add(cellKey(r + rowOffset, c + colOffset)); }));
   return cells;
+}
+
+// 全星セルを含むバウンディングボックスをグリッド中央に配置するオフセットを計算する
+function computeCenterOffset(shape: number[][], stars: StarDefinition[]): { rowOffset: number; colOffset: number } {
+  const rows = shape.length;
+  const cols = shape[0]?.length ?? 1;
+
+  let minRelRow = 0, maxRelRow = rows - 1;
+  let minRelCol = 0, maxRelCol = cols - 1;
+
+  for (const star of stars) {
+    const positions = [star.relativePos];
+    for (const rot of [90, 180, 270] as (90 | 180 | 270)[]) {
+      const ov = star.relativePosOverrides?.[rot];
+      if (ov) positions.push(ov);
+    }
+    for (const pos of positions) {
+      minRelRow = Math.min(minRelRow, pos.y);
+      maxRelRow = Math.max(maxRelRow, pos.y);
+      minRelCol = Math.min(minRelCol, pos.x);
+      maxRelCol = Math.max(maxRelCol, pos.x);
+    }
+  }
+
+  const totalRows = maxRelRow - minRelRow + 1;
+  const totalCols = maxRelCol - minRelCol + 1;
+
+  const idealRow = Math.floor((EDITOR_ROWS - totalRows) / 2) - minRelRow;
+  const idealCol = Math.floor((EDITOR_COLS - totalCols) / 2) - minRelCol;
+
+  // バウンディングボックスがグリッド内に収まるようクランプ
+  const rowOffset = Math.max(-minRelRow, Math.min(EDITOR_ROWS - 1 - maxRelRow, idealRow));
+  const colOffset = Math.max(-minRelCol, Math.min(EDITOR_COLS - 1 - maxRelCol, idealCol));
+
+  return { rowOffset, colOffset };
 }
 
 function starsToStarCellsByRotation(stars: StarDefinition[], itemCells: Set<CellKey>): StarCellsByRotation {
@@ -223,7 +283,8 @@ function Editor() {
   const [color, setColor] = useState("#6b7280");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [mode, setMode] = useState<Mode>("item");
-  const [conditionTag, setConditionTag] = useState("");
+  // 星ごとの発火条件: rotation=0 の星セルキー → タグ配列（OR条件）
+  const [starConditions, setStarConditions] = useState<Map<CellKey, string[]>>(new Map());
 
   // グリッド状態
   const [itemCells, setItemCells] = useState<Set<CellKey>>(new Set());
@@ -235,6 +296,7 @@ function Editor() {
   const [editorItemIds, setEditorItemIds] = useState<Set<string>>(new Set()); // editor-items.json にあるID
   const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null);
+  const [bulkEdit, setBulkEdit] = useState(false);
 
   useEffect(() => {
     // 全アイテム（既存＋エディタ）を取得
@@ -257,7 +319,15 @@ function Editor() {
     } else {
       setStarCellsByRotation(prev => {
         const next = { ...prev, [starRotation]: new Set(prev[starRotation]) };
-        next[starRotation].has(key) ? next[starRotation].delete(key) : next[starRotation].add(key);
+        if (next[starRotation].has(key)) {
+          next[starRotation].delete(key);
+          // rotation=0 の星を削除したら条件も削除
+          if (starRotation === 0) {
+            setStarConditions(cm => { const m = new Map(cm); m.delete(key); return m; });
+          }
+        } else {
+          next[starRotation].add(key);
+        }
         return next;
       });
     }
@@ -267,10 +337,17 @@ function Editor() {
   const loadItem = (item: ItemData) => {
     setName(item.name); setId(item.id); setColor(item.color);
     setSelectedTags(item.tags ?? []);
-    const cells = shapeToItemCells(item.shape);
+    const { rowOffset, colOffset } = computeCenterOffset(item.shape, item.stars ?? []);
+    const cells = shapeToItemCells(item.shape, rowOffset, colOffset);
     setItemCells(cells);
     setStarCellsByRotation(starsToStarCellsByRotation(item.stars ?? [], cells));
-    setConditionTag(item.stars?.[0]?.condition?.tag ?? "");
+    // 星ごとの発火条件を復元
+    const conditions = new Map<CellKey, string[]>();
+    (item.stars ?? []).forEach(star => {
+      const key = cellKey(rowOffset + star.relativePos.y, colOffset + star.relativePos.x);
+      conditions.set(key, star.condition.tags ?? []);
+    });
+    setStarConditions(conditions);
     setEditingId(item.id);
     setMode("item"); setStarRotation(0); setStatus(null);
   };
@@ -278,9 +355,10 @@ function Editor() {
   // ---- clear
   const handleClear = () => {
     setItemCells(new Set()); setStarCellsByRotation(emptyStarCells());
+    setStarConditions(new Map());
     setName(""); setId(""); setColor("#6b7280");
-    setSelectedTags([]); setConditionTag("");
-    setEditingId(null); setStatus(null); setStarRotation(0);
+    setSelectedTags([]);
+    setEditingId(null); setStatus(null); setStarRotation(0); setBulkEdit(false);
   };
 
   // ---- register / update
@@ -291,7 +369,7 @@ function Editor() {
     const payload: ItemData = {
       id: id.trim(), name: name.trim(),
       shape: computeShape(itemCells), color, tags: selectedTags,
-      stars: computeStarsFromRotations(itemCells, starCellsByRotation, conditionTag),
+      stars: computeStarsFromRotations(itemCells, starCellsByRotation, starConditions),
     };
 
     // editor-items.json に既存 → PUT、なければ POST（既存アイテムの上書きも POST）
@@ -336,6 +414,7 @@ function Editor() {
   };
 
   const currentStarCells = starCellsByRotation[starRotation];
+  const displayItemCells = mode === "star" ? getRotatedItemCells(itemCells, starRotation) : itemCells;
 
   return (
     <div className="min-h-screen bg-slate-900 text-white text-sm">
@@ -475,6 +554,7 @@ function Editor() {
             {/* スター専用コントロール */}
             {mode === "star" && (
               <div className="bg-slate-800 rounded-lg p-3 flex flex-col gap-2">
+                {/* 回転セレクター */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400">回転:</span>
                   <div className="flex rounded overflow-hidden border border-slate-600">
@@ -492,13 +572,88 @@ function Editor() {
                     })}
                   </div>
                 </div>
-                <label className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 w-20 flex-shrink-0">条件タグ:</span>
-                  <input value={conditionTag} onChange={e => setConditionTag(e.target.value)}
-                    className="flex-1 bg-slate-700 rounded px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-yellow-400"
-                    placeholder="weapon / potion / ..." />
-                </label>
                 <p className="text-xs text-slate-500">未設定の向きは数学的回転変換を自動適用</p>
+
+                {/* 星ごとの発火条件（OR） */}
+                {starCellsByRotation[0].size > 0 ? (
+                  <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">星の発火条件（OR）</span>
+                      <button
+                        onClick={() => setBulkEdit(v => !v)}
+                        className={`text-xs px-2 py-0.5 rounded border transition-all font-medium ${
+                          bulkEdit
+                            ? "bg-orange-500 border-orange-400 text-white ring-2 ring-orange-400 ring-offset-1 ring-offset-slate-800"
+                            : "bg-slate-600 border-slate-500 text-slate-300 hover:bg-slate-500"
+                        }`}
+                      >
+                        {bulkEdit ? "一括編集: ON" : "一括編集"}
+                      </button>
+                    </div>
+                    {Array.from(starCellsByRotation[0]).map((key, i) => {
+                      const tags = starConditions.get(key) ?? [];
+                      // 一括編集ON時: タグ追加は全星に、削除はその星にのみ適用
+                      const handleAdd = (tag: string) => {
+                        setStarConditions(prev => {
+                          const next = new Map(prev);
+                          if (bulkEdit) {
+                            for (const k of starCellsByRotation[0]) {
+                              const cur = next.get(k) ?? [];
+                              if (!cur.includes(tag)) next.set(k, [...cur, tag]);
+                            }
+                          } else {
+                            const cur = next.get(key) ?? [];
+                            if (!cur.includes(tag)) next.set(key, [...cur, tag]);
+                          }
+                          return next;
+                        });
+                      };
+                      const handleRemove = (tag: string) => {
+                        setStarConditions(prev => {
+                          const next = new Map(prev);
+                          if (bulkEdit) {
+                            for (const k of starCellsByRotation[0]) {
+                              next.set(k, (next.get(k) ?? []).filter(t => t !== tag));
+                            }
+                          } else {
+                            next.set(key, (next.get(key) ?? []).filter(t => t !== tag));
+                          }
+                          return next;
+                        });
+                      };
+                      return (
+                        <div key={key} className="bg-slate-700 rounded p-2 flex flex-col gap-1.5">
+                          <span className="text-xs text-slate-500">★{i + 1}</span>
+                          <div className="flex flex-wrap gap-1 items-center">
+                            {tags.map(tag => (
+                              <span key={tag} className="inline-flex items-center gap-0.5 text-xs bg-yellow-600/80 text-white rounded px-1.5 py-0.5">
+                                {tag}
+                                <button
+                                  onClick={() => handleRemove(tag)}
+                                  className="text-white/60 hover:text-white ml-0.5 leading-none"
+                                >×</button>
+                              </span>
+                            ))}
+                            <select
+                              value=""
+                              onChange={e => { if (e.target.value) handleAdd(e.target.value); }}
+                              className="text-xs bg-slate-600 text-slate-300 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-yellow-400 cursor-pointer"
+                            >
+                              <option value="">+ タグ追加</option>
+                              {availableTags.filter(t => !tags.includes(t)).map(t => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 pt-1 border-t border-slate-700">
+                    発火条件を設定するには、回転0°でスターを配置してください
+                  </p>
+                )}
               </div>
             )}
 
@@ -512,7 +667,7 @@ function Editor() {
               {Array.from({ length: EDITOR_ROWS }, (_, r) =>
                 Array.from({ length: EDITOR_COLS }, (_, c) => {
                   const key = cellKey(r, c);
-                  const isItem = itemCells.has(key);
+                  const isItem = displayItemCells.has(key);
                   const isStar = currentStarCells.has(key);
                   return (
                     <button key={key} onClick={() => toggleCell(r, c)}
