@@ -35,7 +35,10 @@
       ]
     ],
     "color": "#44ab4b",
-    "tags": [],
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
     "stars": []
   },
   {
@@ -54,7 +57,8 @@
     ],
     "color": "#b91d34",
     "tags": [
-      "weapon"
+      "weapon",
+      "have_cooltime"
     ],
     "stars": []
   },
@@ -71,7 +75,1154 @@
     ],
     "color": "#4b8344",
     "tags": [
-      "weapon"
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "claws_of_attack",
+    "name": "アタッククロー",
+    "shape": [
+      [
+        1,
+        1
+      ]
+    ],
+    "color": "#e67a00",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "burning_torch",
+    "name": "燃えるたいまつ",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#f74408",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "ripsaw_blade",
+    "name": "ノコ刃の剣",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#6b7280",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "bloody_dagger",
+    "name": "吸血のダガー",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#dc0909",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "manathirst",
+    "name": "マナ喰らいの剣",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#5e8af3",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "spectral_dagger",
+    "name": "ゴーストダガー",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#588ffd",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "hero_longsword",
+    "name": "英雄のロングソード",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#6b7280",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -1
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": 3
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "falcon_blade",
+    "name": "ハヤブサのつるぎ",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#a99d1e",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -1
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -2,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": 3
+        },
+        "condition": {
+          "tags": [
+            "have_cooltime"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "eggscalibur",
+    "name": "エッグスカリバー",
+    "shape": [
+      [
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        0
+      ]
+    ],
+    "color": "#f0d05c",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 0,
+          "y": 0
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": -1
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": -1
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 3,
+          "y": -1
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 3,
+          "y": 0
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": 1
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 2
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": 2
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 2
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 1
+        },
+        "condition": {
+          "tag": "foods"
+        }
+      }
+    ]
+  },
+  {
+    "id": "wooden_sword",
+    "name": "木の剣",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#fbbf24",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "pan",
+    "name": "フライパン",
+    "shape": [
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "color": "#101010",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -1
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "food"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "broom",
+    "name": "ほうき",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#734e30",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "hammer",
+    "name": "ハンマー",
+    "shape": [
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        0
+      ]
+    ],
+    "color": "#c9caca",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "spear",
+    "name": "スピア",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#FF0000",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -1
+        },
+        "condition": {
+          "tags": [
+            "bag"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -2
+        },
+        "condition": {
+          "tags": [
+            "bag"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -3
+        },
+        "condition": {
+          "tags": [
+            "bag"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -4
+        },
+        "condition": {
+          "tags": [
+            "bag"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -5
+        },
+        "condition": {
+          "tags": [
+            "bag"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "dagger",
+    "name": "ダガー",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#707070",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "scop",
+    "name": "スコップ",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#6b7280",
+    "tags": [
+      "weapon",
+      "scop",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "iron_sword",
+    "name": "英雄の剣",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#6b7280",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -1
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": 2
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 1
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 0
+        },
+        "condition": {
+          "tags": [
+            "weapon"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "wooden_shield",
+    "name": "木の盾",
+    "shape": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "color": "#9ca3af",
+    "tags": [
+      "shield",
+      "no_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "pandamonium",
+    "name": "パンダモニウム",
+    "shape": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "color": "#663190",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 0
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": -1,
+          "y": -1
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -1
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": -1
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": -1
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 3,
+          "y": -1
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 3,
+          "y": 0
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 3,
+          "y": -2
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": -2
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": -2
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 0,
+          "y": -2
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": -3
+        },
+        "condition": {
+          "tag": "food"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 2,
+          "y": -3
+        },
+        "condition": {
+          "tag": "food"
+        }
+      }
+    ]
+  },
+  {
+    "id": "magic_torch",
+    "name": "魔法のたいまつ",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#5584e2",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": -1,
+          "y": 0
+        },
+        "condition": {
+          "tag": "weapon"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 1,
+          "y": 0
+        },
+        "condition": {
+          "tag": "weapon"
+        }
+      }
+    ]
+  },
+  {
+    "id": "snow_stick",
+    "name": "雪の棒",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#a9bde5",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": []
+  },
+  {
+    "id": "poison_spear",
+    "name": "ポイズンスピア",
+    "shape": [
+      [
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "color": "#4eb755",
+    "tags": [
+      "weapon",
+      "have_cooltime"
+    ],
+    "stars": [
+      {
+        "relativePos": {
+          "x": 4,
+          "y": 0
+        },
+        "condition": {
+          "tag": "bag/nature"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 5,
+          "y": 0
+        },
+        "condition": {
+          "tag": "bag/nature"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 6,
+          "y": 0
+        },
+        "condition": {
+          "tag": "bag/nature"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 7,
+          "y": 0
+        },
+        "condition": {
+          "tag": "bag/nature"
+        }
+      },
+      {
+        "relativePos": {
+          "x": 8,
+          "y": 0
+        },
+        "condition": {
+          "tag": "bag/nature"
+        }
+      }
+    ]
+  },
+  {
+    "id": "frostbite",
+    "name": "フロストバイト",
+    "shape": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "color": "#9eb9f0",
+    "tags": [
+      "weapon",
+      "have_cooltime"
     ],
     "stars": []
   }

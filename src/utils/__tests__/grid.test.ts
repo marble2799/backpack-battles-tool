@@ -23,7 +23,7 @@ const SWORD: ItemData = {
     tags: ['weapon', 'sword'],
     stars: [
         // 中央セルの右隣: アイテム外 (relativePos.x=1 はアイテムの右外)
-        { relativePos: { x: 1, y: 1 }, condition: { type: 'at_position', tag: 'armor' } },
+        { relativePos: { x: 1, y: 1 }, condition: { tags: ['armor'] } },
     ],
 };
 
@@ -36,7 +36,7 @@ const SHIELD: ItemData = {
     color: '#fff',
     tags: ['armor', 'shield'],
     stars: [
-        { relativePos: { x: -1, y: 0 }, condition: { type: 'at_position', tag: 'weapon' } },
+        { relativePos: { x: -1, y: 0 }, condition: { tags: ['weapon'] } },
     ],
 };
 
@@ -61,7 +61,7 @@ const POTION: ItemData = {
         {
             relativePos: { x: 0, y: -1 },
             relativePosOverrides: { 90: { x: 0, y: -1 }, 180: { x: 0, y: -1 }, 270: { x: 0, y: -1 } },
-            condition: { type: 'at_position', tag: 'potion' },
+            condition: { tags: ['potion'] },
         },
     ],
 };
@@ -331,7 +331,7 @@ describe('getStarAbsolutePos', () => {
 
     const starNoOverride: StarDefinition = {
         relativePos: { x: 0, y: 1 }, // 中央セル
-        condition: { type: 'at_position', tag: 'armor' },
+        condition: { tags: ['armor'] },
     };
     const starWithOverride: StarDefinition = {
         relativePos: { x: 0, y: 0 }, // rotation=0 では上端
@@ -340,7 +340,7 @@ describe('getStarAbsolutePos', () => {
             180: { x: 0, y: 2 }, // rotation=180 では下端
             270: { x: 0, y: 0 }, // rotation=270 では左端
         },
-        condition: { type: 'at_position', tag: 'weapon' },
+        condition: { tags: ['weapon'] },
     };
 
     it('オーバーライドなし rotation=0: relativePos をそのまま使う', () => {
@@ -380,12 +380,12 @@ describe('getStarVisualPos', () => {
 
     const starNoOverride: StarDefinition = {
         relativePos: { x: 0, y: 1 },
-        condition: { type: 'at_position', tag: 'armor' },
+        condition: { tags: ['armor'] },
     };
     const starWithOverride: StarDefinition = {
         relativePos: { x: 0, y: 0 },
         relativePosOverrides: { 90: { x: 2, y: 0 } },
-        condition: { type: 'at_position', tag: 'weapon' },
+        condition: { tags: ['weapon'] },
     };
 
     it('オーバーライドなし rotation=0: relativePos をそのまま返す', () => {

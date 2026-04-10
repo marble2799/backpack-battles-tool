@@ -230,17 +230,15 @@ export function computeLitStars(
                 placed.rotation,
             );
             // 星のセル自体を占有しているアイテムを確認 (自分自身は除外)
-            if (star.condition.type === 'at_position') {
-                const entry = occupationMap.get(`${absPos.x},${absPos.y}`);
-                if (entry && entry.placed.id !== placed.id) {
-                    const { tag, attribute } = star.condition;
-                    const matchesTag = tag ? entry.itemData.tags.includes(tag) : false;
-                    const matchesAttr = attribute
-                        ? (entry.itemData.attributes ?? []).includes(attribute)
-                        : false;
-                    if (matchesTag || matchesAttr) {
-                        litStars.add(`${placed.id}-${starIndex}`);
-                    }
+            const entry = occupationMap.get(`${absPos.x},${absPos.y}`);
+            if (entry && entry.placed.id !== placed.id) {
+                const { tags, attribute } = star.condition;
+                const matchesTag = (tags ?? []).some(t => entry.itemData.tags.includes(t));
+                const matchesAttr = attribute
+                    ? (entry.itemData.attributes ?? []).includes(attribute)
+                    : false;
+                if (matchesTag || matchesAttr) {
+                    litStars.add(`${placed.id}-${starIndex}`);
                 }
             }
         });

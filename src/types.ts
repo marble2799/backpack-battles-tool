@@ -6,17 +6,12 @@ export type Point = {
 
 export type Rotation = 0 | 90 | 180 | 270;
 
-// 星が光る条件タイプ（将来の拡張用: 'adjacent', 'count' なども追加可能）
-// 'at_position': 星のセルに条件を満たすアイテムが置かれているとき点灯
-export type StarConditionType = 'at_position';
-
 // 星が光る条件
-// tag と attribute はどちらか一方、または両方を指定できる（OR条件）
-// tag:       ItemData.tags に含まれるカテゴリ/種類（例: "weapon", "armor", "potion"）
-// attribute: ItemData.attributes に含まれるゲーム属性（例: "mana", "fire", "water"）
+// 星のセルに条件を満たすアイテムが置かれているとき点灯
+// tags:      ItemData.tags との OR 判定（いずれか1つでも一致すれば点灯）
+// attribute: ItemData.attributes との判定（tags と OR）
 export interface StarCondition {
-    type: StarConditionType;
-    tag?: string;       // ItemData.tags に含まれるタグで判定
+    tags?: string[];    // ItemData.tags のいずれかに一致するタグ（OR条件）
     attribute?: string; // ItemData.attributes に含まれる属性で判定
 }
 
@@ -24,7 +19,7 @@ export interface StarCondition {
 export interface StarDefinition {
     // rotation=0 のときの、アイテム左上を(0,0)とした視覚セル座標 (x=col, y=row)
     relativePos: Point;
-    // 他の回転での視覚セル座標（省略すると relativePos を数学的回転変換で自動計算）
+    // 他の回転での視覚セル座標（省略すると relativePos を回転で自動計算）
     relativePosOverrides?: Partial<Record<90 | 180 | 270, Point>>;
     condition: StarCondition;
 }

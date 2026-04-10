@@ -18,13 +18,13 @@ function expandStars(inputs: StarDefinitionInput[]): StarDefinition[] {
 // 各アイテムの stars フィールドで「星が光る条件」を設定します。
 //
 // 【条件の書き方】
-//   condition: { type: "at_position", tag: "タグ名" }
-//     → 星の位置に ItemData.tags に "タグ名" を含むアイテムが置かれると光る
+//   condition: { tags: ["タグ名"] }
+//     → 星の位置に ItemData.tags にいずれかのタグを含むアイテムが置かれると光る（OR条件）
 //
-//   condition: { type: "at_position", attribute: "属性名" }
+//   condition: { attribute: "属性名" }
 //     → 星の位置に ItemData.attributes に "属性名" を含むアイテムが置かれると光る
 //
-//   tag と attribute を両方指定した場合はどちらかが一致すれば光る（OR条件）
+//   tags と attribute を両方指定した場合はどちらかが一致すれば光る（OR条件）
 //
 // 【使用できるタグ一覧】(tags フィールド)
 //   カテゴリ: "no_cooltime", "bag"
@@ -99,7 +99,7 @@ export const HARDCODED_ITEMS: ItemData[] = [
     stars: expandStars([
       {
         relativePos: { x: [0, -1, 1, -1, 2, 0, 1], y: [-1, 0, 0, 1, 1, 2, 2] },
-        condition: { type: "at_position", tag: food },
+        condition: { tags: [food] },
       }
     ])
   },
@@ -142,7 +142,7 @@ export const HARDCODED_ITEMS: ItemData[] = [
     stars: expandStars([
       {
         relativePos: { x: [0, 0, 0, 0, 0], y: [-1, -2, -3, -4, -5] },
-        condition: { type: "at_position", tag: empty }
+        condition: { tags: [bag] }
       }
     ])
   },
@@ -184,7 +184,7 @@ export const HARDCODED_ITEMS: ItemData[] = [
       // 条件: "weapon" タグのアイテムが星位置に置かれると光
       {
         relativePos: { x: [0, 0], y: [-1, 3] },
-        condition: { type: "at_position", tag: weapon },
+        condition: { tags: [weapon] },
       },
     ]),
   },
@@ -217,7 +217,7 @@ export const HARDCODED_ITEMS: ItemData[] = [
           180: { x: 1, y: -1 },
           270: { x: 0, y: -1 },
         },
-        condition: { type: "at_position", tag: potion },
+        condition: { tags: [potion] },
       },
     ],
   },
